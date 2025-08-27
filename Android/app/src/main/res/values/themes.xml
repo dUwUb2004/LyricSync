@@ -1,0 +1,28 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Theme.MusicNotificationListener" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Primary brand color. -->
+        <item name="colorPrimary">@color/md3_primary</item>
+        <item name="colorOnPrimary">@color/md3_onPrimary</item>
+        <item name="colorPrimaryVariant">@color/md3_primaryContainer</item>
+        
+        <!-- Secondary brand color. -->
+        <item name="colorSecondary">@color/md3_secondary</item>
+        <item name="colorOnSecondary">@color/md3_onSecondary</item>
+        <item name="colorSecondaryVariant">@color/md3_secondaryContainer</item>
+        
+        <!-- Surface colors -->
+        <item name="colorSurface">@color/md3_surface</item>
+        <item name="colorOnSurface">@color/md3_onSurface</item>
+        
+        <!-- Background colors -->
+        <item name="android:colorBackground">@color/md3_background</item>
+        <item name="colorOnBackground">@color/md3_onBackground</item>
+        
+        <!-- Status bar and navigation bar -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
+</resources>

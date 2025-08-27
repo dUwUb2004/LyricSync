@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- 权限声明 -->
+    <uses-permission android:name="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
+    <uses-permission android:name="android.permission.MEDIA_CONTENT_CONTROL" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- 兼容 Android 12+ (API 31) 的通知栏权限 -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" tools:ignore="MissingPermission" />
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@drawable/ic_launcher_foreground"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.MusicNotificationListener">
+
+        <!-- 主界面 -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- 通知监听服务 -->
+        <service
+            android:name=".MusicNotificationListener"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+
+            <!-- 使用 Meta-Data 配置来明确声明服务 -->
+            <meta-data
+                android:name="android.service.notification.listener"
+                android:value="true" />
+        </service>
+
+        <!-- 保活服务 -->
+        <service
+            android:name=".KeepAliveService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <!-- TCP 服务 -->
+        <service
+            android:name=".TcpService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync"
+            android:permission="android.permission.FOREGROUND_SERVICE" />
+
+    </application>
+</manifest>

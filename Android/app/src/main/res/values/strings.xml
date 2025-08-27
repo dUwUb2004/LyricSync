@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">音乐同步</string>
+    <string name="app_description">将手机音乐信息同步到电脑</string>
+    <string name="accessibility_desc">允许电脑端远程控制手机播放/暂停/切歌</string>
+    <string name="notification_permission_title">通知权限设置</string>
+    <string name="notification_permission_description">授予应用读取通知的权限，以便获取音乐播放信息</string>
+    <string name="notification_permission_button">前往设置</string>
+    <string name="app_settings_title">应用设置</string>
+    <string name="app_settings_description">允许自启动以便禁止系统自动杀掉进程</string>
+    <string name="app_settings_button">应用设置</string>
+    <string name="instructions_title">使用说明</string>
+    <string name="instruction_step_1">点击上方按钮授予通知权限</string>
+    <string name="instruction_step_2">开始播放音乐</string>
+    <string name="instruction_step_3">音乐信息将自动同步到电脑</string>
+    <string name="permission_settings_title">权限设置</string>
+    
+    <!-- 保活服务相关 -->
+    <string name="keep_alive_notification_title">音乐同步</string>
+    <string name="keep_alive_notification_text">正在后台运行，监听音乐播放</string>
+    <string name="keep_alive_channel_name">音乐同步保活</string>
+    <string name="keep_alive_channel_description">保持音乐同步服务在后台运行</string>
+    <string name="stop_service">停止服务</string>
+</resources>
