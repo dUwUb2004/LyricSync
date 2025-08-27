@@ -1,0 +1,16 @@
+C:\Users\reaaaqwang\Documents\GitHub\LyricSync\Windows\LyricSync.Windows\obj\Debug\LyricSync.Windows.csproj.AssemblyReference.cache
+C:\Users\reaaaqwang\Documents\GitHub\LyricSync\Windows\LyricSync.Windows\obj\Debug\MainWindow.baml
+C:\Users\reaaaqwang\Documents\GitHub\LyricSync\Windows\LyricSync.Windows\obj\Debug\App.baml
+C:\Users\reaaaqwang\Documents\GitHub\LyricSync\Windows\LyricSync.Windows\obj\Debug\MainWindow.g.cs
+C:\Users\reaaaqwang\Documents\GitHub\LyricSync\Windows\LyricSync.Windows\obj\Debug\App.g.cs
+C:\Users\reaaaqwang\Documents\GitHub\LyricSync\Windows\LyricSync.Windows\obj\Debug\LyricSync.Windows_MarkupCompile.cache
+C:\Users\reaaaqwang\Documents\GitHub\LyricSync\Windows\LyricSync.Windows\obj\Debug\LyricSync.Windows.g.resources
+C:\Users\reaaaqwang\Documents\GitHub\LyricSync\Windows\LyricSync.Windows\obj\Debug\LyricSync.Windows.csproj.CoreCompileInputs.cache
+C:\Users\reaaaqwang\Documents\GitHub\LyricSync\Windows\LyricSync.Windows\bin\Debug\LyricSync.Windows.exe.config
+C:\Users\reaaaqwang\Documents\GitHub\LyricSync\Windows\LyricSync.Windows\bin\Debug\LyricSync.Windows.exe
+C:\Users\reaaaqwang\Documents\GitHub\LyricSync\Windows\LyricSync.Windows\bin\Debug\LyricSync.Windows.pdb
+C:\Users\reaaaqwang\Documents\GitHub\LyricSync\Windows\LyricSync.Windows\bin\Debug\Newtonsoft.Json.dll
+C:\Users\reaaaqwang\Documents\GitHub\LyricSync\Windows\LyricSync.Windows\obj\Debug\LyricSyn.E0671550.Up2Date
+C:\Users\reaaaqwang\Documents\GitHub\LyricSync\Windows\LyricSync.Windows\obj\Debug\LyricSync.Windows.exe
+C:\Users\reaaaqwang\Documents\GitHub\LyricSync\Windows\LyricSync.Windows\obj\Debug\LyricSync.Windows.pdb
+C:\Users\reaaaqwang\Documents\GitHub\LyricSync\Windows\LyricSync.Windows\obj\Debug\LyricSync.Windows.exe.config
