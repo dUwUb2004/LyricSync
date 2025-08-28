@@ -17,6 +17,7 @@ Windows/packages/
 
 # 构建脚本目录
 Windows/Build/
+Windows/Rebuild/
 Windows/Clean/
 
 # QCloudMusicApi构建产物
@@ -30,6 +31,8 @@ Windows/QCloudMusicApi/obj/
 
 # 用户特定文件
 .vs/
+Windows/.vs/
+Windows/LyricSync.Windows/.vs/
 *.user
 *.suo
 *.userosscache
@@ -45,6 +48,10 @@ desktop.ini
 *.swp
 *.swo
 *~
+
+# 可执行文件和第三方库
+Windows/LyricSync.Windows/Tools/
+Windows/LyricSync.Windows/Lib/
 
 # 临时目录
 temp/

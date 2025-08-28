@@ -785,6 +785,11 @@ namespace LyricSync.Windows
             }
         }
         
+        // 日志管理相关字段 - 固定配置，无需用户自定义
+        private const int MAX_LOG_LINES = 1000;        // 最大日志行数
+        private const int LOG_CLEANUP_THRESHOLD = 800; // 清理阈值
+        private const int LOG_CLEANUP_COUNT = 200;     // 每次清理的行数
+        
         private void LogMessage(string message)
         {
             string timestamp = DateTime.Now.ToString("HH:mm:ss");
@@ -792,9 +797,122 @@ namespace LyricSync.Windows
             
             Dispatcher.Invoke(() =>
             {
+                // 检查日志行数是否超过限制
+                int currentLineCount = LogTextBox.Text.Split('\n').Length;
+                
+                if (currentLineCount > MAX_LOG_LINES)
+                {
+                    // 超过最大行数，进行智能清理
+                    CleanupLogs();
+                }
+                else if (currentLineCount > LOG_CLEANUP_THRESHOLD)
+                {
+                    // 超过清理阈值，清理旧日志
+                    CleanupOldLogs();
+                }
+                
+                // 添加新日志
                 LogTextBox.AppendText(logEntry + Environment.NewLine);
                 LogTextBox.ScrollToEnd();
+                
+                // 更新日志状态
+                UpdateLogStatus();
             });
+        }
+        
+        /// <summary>
+        /// 清理旧日志，保留最新的日志
+        /// 系统自动执行，无需用户干预
+        /// </summary>
+        private void CleanupOldLogs()
+        {
+            try
+            {
+                var lines = LogTextBox.Text.Split('\n');
+                if (lines.Length > LOG_CLEANUP_THRESHOLD)
+                {
+                    // 保留最新的日志，删除旧的
+                    var newLines = lines.Skip(lines.Length - LOG_CLEANUP_THRESHOLD + LOG_CLEANUP_COUNT).ToArray();
+                    LogTextBox.Text = string.Join("\n", newLines);
+                    
+                    // 记录清理信息
+                    LogTextBox.AppendText($"[{DateTime.Now:HH:mm:ss}] 🧹 已清理 {LOG_CLEANUP_COUNT} 行旧日志，当前保留 {newLines.Length} 行" + Environment.NewLine);
+                    LogTextBox.ScrollToEnd();
+                    
+                    // 更新日志状态
+                    UpdateLogStatus();
+                }
+            }
+            catch (Exception ex)
+            {
+                // 清理失败时，记录错误但不影响正常日志记录
+                System.Diagnostics.Debug.WriteLine($"日志清理失败: {ex.Message}");
+            }
+        }
+        
+        /// <summary>
+        /// 强制清理日志，保留最新的日志
+        /// 当日志超过最大限制时自动执行
+        /// </summary>
+        private void CleanupLogs()
+        {
+            try
+            {
+                var lines = LogTextBox.Text.Split('\n');
+                if (lines.Length > MAX_LOG_LINES)
+                {
+                    // 保留最新的日志，删除超出的部分
+                    var newLines = lines.Skip(lines.Length - MAX_LOG_LINES + 100).ToArray();
+                    LogTextBox.Text = string.Join("\n", newLines);
+                    
+                    // 记录清理信息
+                    LogTextBox.AppendText($"[{DateTime.Now:HH:mm:ss}] 🧹 日志数量超限，已清理至 {newLines.Length} 行" + Environment.NewLine);
+                    LogTextBox.ScrollToEnd();
+                    
+                    // 更新日志状态
+                    UpdateLogStatus();
+                }
+            }
+            catch (Exception ex)
+            {
+                // 清理失败时，记录错误但不影响正常日志记录
+                System.Diagnostics.Debug.WriteLine($"日志清理失败: {ex.Message}");
+            }
+        }
+        
+        /// <summary>
+        /// 更新日志状态显示
+        /// </summary>
+        private void UpdateLogStatus()
+        {
+            try
+            {
+                var lines = LogTextBox.Text.Split('\n');
+                int currentLines = lines.Length;
+                
+                Dispatcher.Invoke(() =>
+                {
+                    if (currentLines > MAX_LOG_LINES)
+                    {
+                        LogStatusText.Text = $"日志状态: 超限 ({currentLines}/{MAX_LOG_LINES})";
+                        LogStatusText.Foreground = System.Windows.Media.Brushes.Red;
+                    }
+                    else if (currentLines > LOG_CLEANUP_THRESHOLD)
+                    {
+                        LogStatusText.Text = $"日志状态: 接近限制 ({currentLines}/{MAX_LOG_LINES})";
+                        LogStatusText.Foreground = System.Windows.Media.Brushes.Orange;
+                    }
+                    else
+                    {
+                        LogStatusText.Text = $"日志状态: 正常 ({currentLines}/{MAX_LOG_LINES})";
+                        LogStatusText.Foreground = System.Windows.Media.Brushes.Green;
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"更新日志状态失败: {ex.Message}");
+            }
         }
         
         private async void PlayPauseButton_Click(object sender, RoutedEventArgs e)
@@ -824,6 +942,50 @@ namespace LyricSync.Windows
         private async void TestSearchButton_Click(object sender, RoutedEventArgs e)
         {
             await TestManualSearch();
+        }
+        
+        private void ClearLogButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // 清空日志文本框
+                LogTextBox.Text = "";
+                
+                // 添加清理记录
+                string timestamp = DateTime.Now.ToString("HH:mm:ss");
+                LogTextBox.Text = $"[{timestamp}] 🧹 日志已手动清空" + Environment.NewLine;
+                
+                // 更新日志状态
+                UpdateLogStatus();
+                
+                LogMessage("✅ 日志已手动清空");
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"❌ 清理日志失败: {ex.Message}");
+            }
+        }
+        
+        private void LogInfoButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // 显示日志统计信息
+                var lines = LogTextBox.Text.Split('\n');
+                int totalLines = lines.Length;
+                int nonEmptyLines = lines.Count(line => !string.IsNullOrWhiteSpace(line));
+                
+                string info = $"📊 日志统计信息:\n" +
+                             $"   当前行数: {totalLines}\n" +
+                             $"   非空行数: {nonEmptyLines}\n" +
+                             $"   状态: {(totalLines > MAX_LOG_LINES ? "超限" : totalLines > LOG_CLEANUP_THRESHOLD ? "接近限制" : "正常")}";
+                
+                MessageBox.Show(info, "日志信息", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"❌ 获取日志信息失败: {ex.Message}");
+            }
         }
         
         private async Task TestManualSearch()
