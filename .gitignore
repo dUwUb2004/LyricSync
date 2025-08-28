@@ -1,0 +1,51 @@
+# LyricSync 项目 .gitignore 文件
+
+# Windows端构建产物
+Windows/LyricSync.Windows/bin/
+Windows/LyricSync.Windows/obj/
+Windows/LyricSync.Windows/Properties/launchSettings.json
+
+# Android端构建产物
+Android/app/build/
+Android/build/
+Android/.gradle/
+Android/.idea/
+Android/.kotlin/
+
+# NuGet包缓存
+Windows/packages/
+
+# 构建脚本目录
+Windows/Build/
+Windows/Clean/
+
+# QCloudMusicApi构建产物
+Windows/QCloudMusicApi/bin/
+Windows/QCloudMusicApi/obj/
+
+# 日志和临时文件
+*.log
+*.tmp
+*.cache
+
+# 用户特定文件
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE文件
+.vscode/
+*.swp
+*.swo
+*~
+
+# 临时目录
+temp/
+tmp/

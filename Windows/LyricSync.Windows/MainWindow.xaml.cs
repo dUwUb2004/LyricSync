@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Net.Http;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,6 +23,9 @@ namespace LyricSync.Windows
         private DispatcherTimer progressTimer;
         private MusicInfo currentMusic;
         private string adbPath;
+        private HttpClient httpClient;
+        private const string NETEASE_API_BASE = "http://localhost:3000";
+        private string lastSearchedTitle = null; // 记录上一次搜索的歌曲名称
         
         public MainWindow()
         {
@@ -27,6 +33,7 @@ namespace LyricSync.Windows
             InitializeTimer();
             UpdateConnectionStatus(false);
             InitializeAdbPath();
+            InitializeHttpClient();
         }
         
         private void InitializeTimer()
@@ -78,6 +85,48 @@ namespace LyricSync.Windows
             {
                 LogMessage("❌ 初始化ADB工具失败: " + ex.Message);
                 adbPath = null;
+            }
+        }
+        
+        private void InitializeHttpClient()
+        {
+            try
+            {
+                httpClient = new HttpClient();
+                httpClient.Timeout = TimeSpan.FromSeconds(10);
+                LogMessage("✅ HTTP客户端已初始化，网易云API地址: " + NETEASE_API_BASE);
+                
+                // 异步测试API连接
+                _ = Task.Run(async () => await TestNeteaseApiConnection());
+            }
+            catch (Exception ex)
+            {
+                LogMessage("❌ 初始化HTTP客户端失败: " + ex.Message);
+                httpClient = null;
+            }
+        }
+        
+        private async Task TestNeteaseApiConnection()
+        {
+            try
+            {
+                LogMessage("🔍 正在测试网易云API连接...");
+                var response = await httpClient.GetAsync($"{NETEASE_API_BASE}/");
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    LogMessage("✅ 网易云API连接测试成功");
+                }
+                else
+                {
+                    LogMessage($"⚠️ 网易云API连接测试失败: {response.StatusCode}");
+                    LogMessage("💡 请确保API服务器正在运行");
+                }
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"❌ 网易云API连接测试失败: {ex.Message}");
+                LogMessage("💡 请检查API服务器是否启动，地址是否正确");
             }
         }
         
@@ -182,6 +231,10 @@ namespace LyricSync.Windows
                 progressTimer.Stop();
                 currentMusic = null;
                 ResetMusicDisplay();
+                
+                // 重置上一次搜索的标题
+                lastSearchedTitle = null;
+                LogMessage("🔄 已重置搜索状态");
             }
             catch (Exception ex)
             {
@@ -323,17 +376,33 @@ namespace LyricSync.Windows
         {
             try
             {
+                // 过滤掉空行和无关日志
+                if (string.IsNullOrWhiteSpace(line))
+                {
+                    return;
+                }
+                
                 // 查找JSON数据
                 int jsonStart = line.IndexOf('{');
                 if (jsonStart >= 0)
                 {
                     string jsonData = line.Substring(jsonStart);
+                    LogMessage($"📋 发现JSON数据: {jsonData.Substring(0, Math.Min(100, jsonData.Length))}...");
                     ProcessMusicData(jsonData);
+                }
+                else
+                {
+                    // 记录非JSON日志行（可选，用于调试）
+                    if (line.Contains("USB_MUSIC") || line.Contains("music") || line.Contains("song"))
+                    {
+                        LogMessage($"📝 相关日志行: {line}");
+                    }
                 }
             }
             catch (Exception ex)
             {
-                LogMessage($"处理日志行失败: {ex.Message}");
+                LogMessage($"❌ 处理日志行失败: {ex.Message}");
+                LogMessage($"💡 问题日志行: {line}");
             }
         }
         
@@ -341,15 +410,28 @@ namespace LyricSync.Windows
         {
             try
             {
+                LogMessage($"📥 收到原始数据: {data}");
+                
                 // 尝试解析JSON数据
                 var musicInfo = JsonConvert.DeserializeObject<MusicInfo>(data);
                 if (musicInfo != null)
                 {
+                    // 验证音乐信息的完整性
+                    if (string.IsNullOrEmpty(musicInfo.Title) && string.IsNullOrEmpty(musicInfo.Artist) && string.IsNullOrEmpty(musicInfo.Album))
+                    {
+                        LogMessage("⚠️ 警告：音乐信息不完整，所有字段都为空");
+                        LogMessage("💡 这可能是Android端数据格式问题或音乐播放器未正确发送信息");
+                    }
+                    else
+                    {
+                        LogMessage($"✅ 音乐信息解析成功");
+                    }
+                    
                     Dispatcher.Invoke(() =>
                     {
                         currentMusic = musicInfo;
                         UpdateMusicDisplay(musicInfo);
-                        LogMessage($"收到音乐信息: {musicInfo.Title} - {musicInfo.Artist}");
+                        LogMessage($"收到音乐信息: {musicInfo.Title ?? "未知标题"} - {musicInfo.Artist ?? "未知艺术家"}");
                         
                         if (musicInfo.IsPlaying)
                         {
@@ -360,12 +442,251 @@ namespace LyricSync.Windows
                             progressTimer.Stop();
                         }
                     });
+                    
+                    // 检查歌曲名称是否发生变化，只有变化时才搜索
+                    if (HasTitleChanged(musicInfo.Title))
+                    {
+                        lastSearchedTitle = musicInfo.Title;
+                        LogMessage($"🔄 歌曲名称发生变化，开始搜索: '{musicInfo.Title}'");
+                        // 异步搜索网易云音乐信息
+                        _ = Task.Run(async () => await SearchNeteaseMusic(musicInfo));
+                    }
+                    else
+                    {
+                        LogMessage($"⏭️ 歌曲名称未变化，跳过搜索: '{musicInfo.Title}'");
+                    }
+                }
+                else
+                {
+                    LogMessage("❌ 音乐信息解析失败：返回null");
                 }
             }
             catch (JsonException ex)
             {
-                LogMessage($"解析音乐数据失败: {ex.Message}");
+                LogMessage($"❌ 解析音乐数据失败: {ex.Message}");
+                LogMessage($"💡 原始数据: {data}");
             }
+            catch (Exception ex)
+            {
+                LogMessage($"❌ 处理音乐数据时发生未知错误: {ex.Message}");
+                LogMessage($"💡 原始数据: {data}");
+            }
+        }
+        
+        private async Task SearchNeteaseMusic(MusicInfo musicInfo)
+        {
+            if (httpClient == null)
+            {
+                LogMessage("❌ HTTP客户端未初始化，无法搜索网易云音乐");
+                return;
+            }
+            
+            try
+            {
+                // 构建搜索关键词
+                string searchKeywords = BuildSearchKeywords(musicInfo);
+                
+                // 检查搜索关键词是否有效
+                if (string.IsNullOrWhiteSpace(searchKeywords))
+                {
+                    LogMessage("❌ 搜索关键词为空，跳过搜索");
+                    return;
+                }
+                
+                LogMessage($"🔍 正在搜索网易云音乐: '{searchKeywords}'");
+                
+                // 使用已验证有效的 'keywords' 参数进行搜索
+                string encodedKeywords = Uri.EscapeDataString(searchKeywords);
+                var searchUrl = $"{NETEASE_API_BASE}/search?keywords={encodedKeywords}&type=1&limit=20&offset=0";
+                
+                LogMessage($"📡 发送搜索请求: {searchUrl}");
+                
+                var response = await httpClient.GetAsync(searchUrl);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    LogMessage("✅ 搜索请求成功");
+                    await ProcessSearchResponse(response, musicInfo);
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    LogMessage($"❌ 搜索请求失败，状态码: {response.StatusCode}");
+                    LogMessage($"💡 错误响应: {errorContent}");
+                }
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"❌ 搜索网易云音乐失败: {ex.Message}");
+                LogMessage($"💡 请检查网络连接和API服务器状态");
+            }
+        }
+        
+        private async Task ProcessSearchResponse(HttpResponseMessage response, MusicInfo musicInfo)
+        {
+            try
+            {
+                var responseContent = await response.Content.ReadAsStringAsync();
+                LogMessage($"📡 API响应: {responseContent.Substring(0, Math.Min(200, responseContent.Length))}...");
+                
+                var searchResponse = JsonConvert.DeserializeObject<NeteaseSearchResponse>(responseContent);
+                
+                if (searchResponse?.Result?.Songs != null && searchResponse.Result.Songs.Count > 0)
+                {
+                    LogMessage($"🎵 搜索到 {searchResponse.Result.Songs.Count} 首歌曲");
+                    
+                    // 匹配最佳结果
+                    var bestMatch = FindBestMatch(musicInfo, searchResponse.Result.Songs);
+                    
+                    if (bestMatch != null)
+                    {
+                        LogMessage($"✅ 找到匹配歌曲: {bestMatch.Name} - {string.Join(", ", bestMatch.Artists?.Select(a => a.Name) ?? new List<string>())}");
+                        LogMessage($"🎵 歌曲ID: {bestMatch.Id}");
+                        LogMessage($"💿 专辑: {bestMatch.Album?.Name ?? "未知"}");
+                        LogMessage($"⏱️ 时长: {FormatTime(bestMatch.Duration)}");
+                        
+                        // 显示所有搜索结果供参考
+                        LogMessage("📋 所有搜索结果:");
+                        for (int i = 0; i < Math.Min(3, searchResponse.Result.Songs.Count); i++)
+                        {
+                            var song = searchResponse.Result.Songs[i];
+                            LogMessage($"  {i + 1}. {song.Name} - {string.Join(", ", song.Artists?.Select(a => a.Name) ?? new List<string>())} (ID: {song.Id})");
+                        }
+                    }
+                    else
+                    {
+                        LogMessage("⚠️ 未找到完全匹配的歌曲");
+                    }
+                }
+                else
+                {
+                    LogMessage("❌ 网易云API返回空结果");
+                    LogMessage($"💡 响应内容: {responseContent}");
+                }
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"❌ 处理API响应失败: {ex.Message}");
+            }
+        }
+        
+        private string BuildSearchKeywords(MusicInfo musicInfo)
+        {
+            // 只搜索歌曲名称，不搜索艺术家和专辑
+            if (string.IsNullOrEmpty(musicInfo.Title))
+            {
+                LogMessage("⚠️ 歌曲名称为空，无法搜索");
+                return null;
+            }
+            
+            // 移除英文翻译部分，只保留中文标题
+            string title = musicInfo.Title;
+            int englishStart = title.IndexOf('(');
+            if (englishStart > 0)
+            {
+                title = title.Substring(0, englishStart).Trim();
+            }
+            
+            LogMessage($"🔍 构建搜索关键词 - 只搜索歌曲名称: '{title}'");
+            return title;
+        }
+        
+        private bool HasTitleChanged(string newTitle)
+        {
+            if (string.IsNullOrEmpty(newTitle))
+            {
+                return false;
+            }
+            
+            // 清理新标题（移除英文翻译部分）
+            string cleanNewTitle = newTitle;
+            int englishStart = cleanNewTitle.IndexOf('(');
+            if (englishStart > 0)
+            {
+                cleanNewTitle = cleanNewTitle.Substring(0, englishStart).Trim();
+            }
+            
+            // 清理上一次搜索的标题
+            string cleanLastTitle = lastSearchedTitle;
+            if (!string.IsNullOrEmpty(cleanLastTitle))
+            {
+                int lastEnglishStart = cleanLastTitle.IndexOf('(');
+                if (lastEnglishStart > 0)
+                {
+                    cleanLastTitle = cleanLastTitle.Substring(0, lastEnglishStart).Trim();
+                }
+            }
+            
+            // 比较清理后的标题
+            bool hasChanged = !string.Equals(cleanNewTitle, cleanLastTitle, StringComparison.OrdinalIgnoreCase);
+            
+            if (hasChanged)
+            {
+                LogMessage($"🔄 标题变化检测: '{cleanLastTitle ?? "无"}' -> '{cleanNewTitle}'");
+            }
+            
+            return hasChanged;
+        }
+        
+        private NeteaseSong FindBestMatch(MusicInfo musicInfo, List<NeteaseSong> songs)
+        {
+            if (songs == null || songs.Count == 0) return null;
+            
+            // 清理标题，移除英文翻译
+            string cleanTitle = musicInfo.Title;
+            int englishStart = cleanTitle.IndexOf('(');
+            if (englishStart > 0)
+            {
+                cleanTitle = cleanTitle.Substring(0, englishStart).Trim();
+            }
+            
+            LogMessage($"🎯 开始匹配歌曲: '{cleanTitle}' - '{musicInfo.Artist}'");
+            
+            // 1. 完全匹配标题和艺术家
+            var exactMatch = songs.FirstOrDefault(s => 
+                string.Equals(s.Name, cleanTitle, StringComparison.OrdinalIgnoreCase) &&
+                s.Artists?.Any(a => string.Equals(a.Name, musicInfo.Artist, StringComparison.OrdinalIgnoreCase)) == true);
+            
+            if (exactMatch != null)
+            {
+                LogMessage("🎯 找到完全匹配的歌曲");
+                return exactMatch;
+            }
+            
+            // 2. 标题完全匹配，艺术家部分匹配
+            var titleExactArtistPartial = songs.FirstOrDefault(s => 
+                string.Equals(s.Name, cleanTitle, StringComparison.OrdinalIgnoreCase) &&
+                s.Artists?.Any(a => musicInfo.Artist.Contains(a.Name) || a.Name.Contains(musicInfo.Artist)) == true);
+            
+            if (titleExactArtistPartial != null)
+            {
+                LogMessage("🎯 找到标题完全匹配，艺术家部分匹配的歌曲");
+                return titleExactArtistPartial;
+            }
+            
+            // 3. 标题完全匹配
+            var titleMatch = songs.FirstOrDefault(s => 
+                string.Equals(s.Name, cleanTitle, StringComparison.OrdinalIgnoreCase));
+            
+            if (titleMatch != null)
+            {
+                LogMessage("🎯 找到标题匹配的歌曲");
+                return titleMatch;
+            }
+            
+            // 4. 标题包含匹配
+            var titleContains = songs.FirstOrDefault(s => 
+                s.Name.Contains(cleanTitle) || cleanTitle.Contains(s.Name));
+            
+            if (titleContains != null)
+            {
+                LogMessage("🎯 找到标题包含匹配的歌曲");
+                return titleContains;
+            }
+            
+            // 5. 返回第一个结果
+            LogMessage("🎯 未找到精确匹配，返回第一个搜索结果");
+            return songs[0];
         }
         
         private async Task ExecuteAdbCommand(string arguments)
@@ -500,6 +821,41 @@ namespace LyricSync.Windows
             }
         }
         
+        private async void TestSearchButton_Click(object sender, RoutedEventArgs e)
+        {
+            await TestManualSearch();
+        }
+        
+        private async Task TestManualSearch()
+        {
+            try
+            {
+                LogMessage("🧪 开始手动测试搜索功能...");
+                
+                // 创建一个测试用的音乐信息
+                var testMusicInfo = new MusicInfo
+                {
+                    Title = "测试歌曲",
+                    Artist = "测试艺术家",
+                    Album = "测试专辑"
+                };
+                
+                LogMessage($"🧪 测试音乐信息: {testMusicInfo.Title} - {testMusicInfo.Artist}");
+                
+                // 手动测试时，强制更新搜索状态
+                lastSearchedTitle = null;
+                
+                // 执行搜索
+                await SearchNeteaseMusic(testMusicInfo);
+                
+                LogMessage("🧪 手动测试搜索完成");
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"❌ 手动测试搜索失败: {ex.Message}");
+            }
+        }
+        
         private async Task SendControlCommand(int keyCode)
         {
             // 检查ADB路径是否已设置
@@ -544,6 +900,7 @@ namespace LyricSync.Windows
         {
             StopListening();
             CleanupTempFiles();
+            CleanupHttpClient();
             base.OnClosed(e);
         }
         
@@ -586,6 +943,23 @@ namespace LyricSync.Windows
                 LogMessage($"⚠️ 清理临时文件时出错: {ex.Message}");
             }
         }
+        
+        private void CleanupHttpClient()
+        {
+            try
+            {
+                if (httpClient != null)
+                {
+                    httpClient.Dispose();
+                    httpClient = null;
+                    LogMessage("🧹 HTTP客户端已清理");
+                }
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"⚠️ 清理HTTP客户端时出错: {ex.Message}");
+            }
+        }
     }
     
     public class MusicInfo
@@ -607,5 +981,90 @@ namespace LyricSync.Windows
         
         [JsonProperty("duration")]
         public long Duration { get; set; } = 0;
+    }
+    
+    // 网易云音乐API数据模型
+    public class NeteaseSearchRequest
+    {
+        [JsonProperty("keywords")]
+        public string Keywords { get; set; }
+        
+        [JsonProperty("s")]
+        public string S { get; set; }  // 标准搜索参数
+        
+        [JsonProperty("type")]
+        public int Type { get; set; } = 1;  // 1: 单曲, 10: 专辑, 100: 歌手
+        
+        [JsonProperty("limit")]
+        public int Limit { get; set; } = 20;  // 结果数量限制
+        
+        [JsonProperty("offset")]
+        public int Offset { get; set; } = 0;  // 偏移量
+    }
+    
+    public class NeteaseSearchResponse
+    {
+        [JsonProperty("code")]
+        public int Code { get; set; }
+        
+        [JsonProperty("result")]
+        public NeteaseSearchResult Result { get; set; }
+        
+        [JsonProperty("status")]
+        public int Status { get; set; }
+    }
+    
+    public class NeteaseSearchResult
+    {
+        [JsonProperty("hasMore")]
+        public bool HasMore { get; set; }
+        
+        [JsonProperty("songCount")]
+        public int SongCount { get; set; }
+        
+        [JsonProperty("songs")]
+        public List<NeteaseSong> Songs { get; set; }
+    }
+    
+    public class NeteaseSong
+    {
+        [JsonProperty("id")]
+        public long Id { get; set; }
+        
+        [JsonProperty("name")]
+        public string Name { get; set; }
+        
+        [JsonProperty("duration")]
+        public long Duration { get; set; }
+        
+        [JsonProperty("artists")]
+        public List<NeteaseArtist> Artists { get; set; }
+        
+        [JsonProperty("album")]
+        public NeteaseAlbum Album { get; set; }
+        
+        [JsonProperty("transNames")]
+        public List<string> TransNames { get; set; }
+    }
+    
+    public class NeteaseArtist
+    {
+        [JsonProperty("id")]
+        public long Id { get; set; }
+        
+        [JsonProperty("name")]
+        public string Name { get; set; }
+    }
+    
+    public class NeteaseAlbum
+    {
+        [JsonProperty("id")]
+        public long Id { get; set; }
+        
+        [JsonProperty("name")]
+        public string Name { get; set; }
+        
+        [JsonProperty("artist")]
+        public NeteaseArtist Artist { get; set; }
     }
 }
