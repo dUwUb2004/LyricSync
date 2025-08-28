@@ -168,7 +168,9 @@ namespace LyricSync.Windows
             if (currentMusic != null && currentMusic.IsPlaying)
             {
                 currentMusic.Position += 1000; // 增加1秒
-                UpdateProgressBar();
+                
+                // 重要：定时器只更新进度条的值和当前时间，不覆盖总时长
+                UpdateProgressBarValueOnly();
             }
         }
         
@@ -452,6 +454,20 @@ namespace LyricSync.Windows
                             LogMessage($"✅ 音乐信息未变化，保留现有匹配信息: {currentMusic.MatchedSong.Name}");
                         }
                         
+                        // 重要：保护API获取的时长信息，避免被Android端数据覆盖
+                        if (currentMusic != null && currentMusic.Duration > 0)
+                        {
+                            LogMessage($"🛡️ 保护现有时长信息: {FormatTime(currentMusic.Duration)}");
+                            musicInfo.Duration = currentMusic.Duration; // 将API时长复制到新数据中
+                        }
+                        
+                        // 保护匹配信息
+                        if (currentMusic != null)
+                        {
+                            musicInfo.MatchedSong = currentMusic.MatchedSong;
+                            musicInfo.SearchResponseJson = currentMusic.SearchResponseJson;
+                        }
+                        
                         // 更新当前音乐信息
                         currentMusic = musicInfo;
                         
@@ -569,6 +585,13 @@ namespace LyricSync.Windows
                         LogMessage($"🎵 歌曲ID: {bestMatch.Id}");
                         LogMessage($"💿 专辑: {bestMatch.Album?.Name ?? "未知"}");
                         LogMessage($"⏱️ 时长: {FormatTime(bestMatch.Duration)}");
+                        
+                        // 重要：将API返回的歌曲时长设置到当前音乐对象
+                        if (currentMusic != null && bestMatch.Duration > 0)
+                        {
+                            currentMusic.Duration = bestMatch.Duration;
+                            LogMessage($"🔄 已更新歌曲时长: {FormatTime(currentMusic.Duration)}");
+                        }
                         
                         // 保存匹配的歌曲信息到当前音乐对象
                         SaveMatchedSongInfo(bestMatch, responseContent);
@@ -837,14 +860,15 @@ namespace LyricSync.Windows
             ArtistName.Text = music.Artist ?? "未知艺术家";
             AlbumName.Text = music.Album ?? "未知专辑";
             
-            UpdateProgressBar();
-            
             // 严格的状态保护：有匹配信息时绝对不覆盖
             if (HasMatchedSongInfo())
             {
                 // 有匹配信息就显示，并且强制保护状态
                 LogMessage($"🛡️ 状态保护：保持匹配信息显示 - {music.MatchedSong.Name}");
                 UpdateMatchedSongDisplay(music.MatchedSong, music.SearchResponseJson);
+                
+                // 重要：即使有匹配信息，也要更新进度条，确保时长信息正确显示
+                UpdateProgressBar();
                 return; // 重要：有匹配信息时直接返回，不执行后续逻辑
             }
             
@@ -867,6 +891,26 @@ namespace LyricSync.Windows
                     LogMessage($"⚠️ 状态冲突：UI显示匹配信息但数据中没有，保持当前显示");
                 }
             }
+            
+            // 最后更新进度条
+            UpdateProgressBar();
+        }
+        
+        /// <summary>
+        /// 只更新进度条的值和当前时间，不覆盖总时长
+        /// 用于定时器更新，避免覆盖API获取的时长信息
+        /// </summary>
+        private void UpdateProgressBarValueOnly()
+        {
+            if (currentMusic != null)
+            {
+                // 只更新进度条的值和当前时间
+                ProgressBar.Value = currentMusic.Position;
+                CurrentTime.Text = FormatTime(currentMusic.Position);
+                
+                // 不更新总时长，保持API获取的时长信息
+                // 总时长只在有新的API响应时更新
+            }
         }
         
         private void UpdateProgressBar()
@@ -875,7 +919,21 @@ namespace LyricSync.Windows
             {
                 ProgressBar.Value = currentMusic.Position;
                 CurrentTime.Text = FormatTime(currentMusic.Position);
-                TotalTime.Text = FormatTime(currentMusic.Duration);
+                
+                // 优先使用API获取的歌曲时长，如果没有则显示Android端发送的时长
+                long totalDuration = currentMusic.Duration;
+                if (totalDuration <= 0 && currentMusic.MatchedSong != null)
+                {
+                    totalDuration = currentMusic.MatchedSong.Duration;
+                }
+                
+                TotalTime.Text = FormatTime(totalDuration);
+                
+                // 更新进度条最大值
+                if (totalDuration > 0)
+                {
+                    ProgressBar.Maximum = totalDuration;
+                }
             }
         }
         
@@ -885,6 +943,7 @@ namespace LyricSync.Windows
             ArtistName.Text = "";
             AlbumName.Text = "";
             ProgressBar.Value = 0;
+            ProgressBar.Maximum = 100; // 重置进度条最大值
             CurrentTime.Text = "0:00";
             TotalTime.Text = "0:00";
             
@@ -1064,6 +1123,16 @@ namespace LyricSync.Windows
                         MatchedSongDuration.Text = $"⏱️ 时长: {FormatTime(matchedSong.Duration)}";
                         MatchedSongId.Text = $"🆔 歌曲ID: {matchedSong.Id}";
                         
+                        // 重要：同步更新当前音乐的时长信息
+                        if (currentMusic != null && matchedSong.Duration > 0)
+                        {
+                            currentMusic.Duration = matchedSong.Duration;
+                            LogMessage($"🔄 同步更新当前音乐时长: {FormatTime(currentMusic.Duration)}");
+                            
+                            // 立即更新进度条显示
+                            UpdateProgressBar();
+                        }
+                        
                         // 更新专辑封面
                         UpdateAlbumCover(matchedSong);
                         
@@ -1212,6 +1281,13 @@ namespace LyricSync.Windows
                     
                     currentMusic.MatchedSong = matchedSong;
                     currentMusic.SearchResponseJson = jsonResponse;
+                    
+                    // 重要：同步更新歌曲时长
+                    if (matchedSong.Duration > 0)
+                    {
+                        currentMusic.Duration = matchedSong.Duration;
+                        LogMessage($"🔄 同步更新歌曲时长: {FormatTime(matchedSong.Duration)}");
+                    }
                     
                     LogMessage($"✅ 匹配歌曲信息已保存: {matchedSong.Name} (ID: {matchedSong.Id})");
                 }
@@ -1492,24 +1568,30 @@ namespace LyricSync.Windows
                 {
                     Title = "测试歌曲",
                     Artist = "测试艺术家",
-                    Album = "测试专辑"
+                    Album = "测试专辑",
+                    Position = 0,
+                    IsPlaying = true,
+                    Duration = 0 // 初始时长为0，等待API返回
                 };
                 
                 LogMessage($"🧪 测试音乐信息: {testMusicInfo.Title} - {testMusicInfo.Artist}");
                 
+                // 重要：将测试音乐信息设置为当前音乐，这样时长信息才能正确同步
+                currentMusic = testMusicInfo;
+                
                 // 手动测试时，清除旧的匹配信息并显示等待搜索状态
-                if (currentMusic != null)
-                {
-                    currentMusic.MatchedSong = null;
-                    currentMusic.SearchResponseJson = null;
-                    LogMessage("🧪 测试模式：清除旧匹配信息");
-                }
+                currentMusic.MatchedSong = null;
+                currentMusic.SearchResponseJson = null;
+                LogMessage("🧪 测试模式：清除旧匹配信息");
                 
                 // 强制更新搜索状态
                 lastSearchedTitle = null;
                 
                 // 显示等待搜索状态
                 ShowWaitingForSearchStatus();
+                
+                // 更新音乐显示
+                UpdateMusicDisplay(currentMusic);
                 
                 // 执行搜索
                 await SearchNeteaseMusic(testMusicInfo);
@@ -1518,6 +1600,12 @@ namespace LyricSync.Windows
                 if (HasMatchedSongInfo())
                 {
                     LogMessage("✅ 测试完成，匹配信息已保存");
+                    
+                    // 重要：再次更新显示，确保时长信息正确显示
+                    UpdateMusicDisplay(currentMusic);
+                    UpdateProgressBar();
+                    
+                    LogMessage($"🎯 测试歌曲时长: {FormatTime(currentMusic.Duration)}");
                 }
                 else
                 {
