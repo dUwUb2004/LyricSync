@@ -26,7 +26,7 @@ LyricSync.Windows/
 - Windows 10 或更高版本
 - .NET Framework 4.8
 - Visual Studio 2019 或更高版本
-- Android Debug Bridge (ADB) 工具
+- **ADB工具已集成，无需单独安装**
 
 ## 构建说明
 
@@ -47,6 +47,16 @@ msbuild LyricSync.Windows.sln /p:Configuration=Debug /p:Platform="Any CPU"
 # 或使用dotnet CLI（如果安装了.NET SDK）
 dotnet build LyricSync.Windows.sln
 ```
+
+### 方法3：首次构建（嵌入ADB工具）
+
+如果是首次构建，可以运行以下脚本将ADB工具嵌入到exe中：
+
+```cmd
+embed_adb_tools.bat
+```
+
+然后正常构建项目。ADB工具将直接包含在exe文件中，无需额外文件。
 
 ## 功能特性
 
@@ -73,9 +83,10 @@ dotnet build LyricSync.Windows.sln
 
 ## 注意事项
 
-- 需要安装Android SDK或独立的ADB工具
+- **ADB工具已嵌入在exe文件中，完全自包含**
+- **应用程序完全独立，不依赖任何外部文件**
 - Android设备需要启用开发者选项和USB调试
-- 确保ADB工具在系统PATH中可用
+- 首次构建前请运行 `embed_adb_tools.bat` 脚本嵌入ADB工具
 
 ## 许可证
 

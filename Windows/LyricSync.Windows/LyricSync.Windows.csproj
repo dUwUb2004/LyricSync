@@ -79,5 +79,10 @@
   <ItemGroup>
     <None Include="app.config" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Tools\adb.exe" />
+    <EmbeddedResource Include="Tools\AdbWinApi.dll" />
+    <EmbeddedResource Include="Tools\AdbWinUsbApi.dll" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

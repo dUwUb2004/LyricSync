@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -18,12 +19,14 @@ namespace LyricSync.Windows
         private bool isListening = false;
         private DispatcherTimer progressTimer;
         private MusicInfo currentMusic;
+        private string adbPath;
         
         public MainWindow()
         {
             InitializeComponent();
             InitializeTimer();
             UpdateConnectionStatus(false);
+            InitializeAdbPath();
         }
         
         private void InitializeTimer()
@@ -31,6 +34,84 @@ namespace LyricSync.Windows
             progressTimer = new DispatcherTimer();
             progressTimer.Interval = TimeSpan.FromSeconds(1);
             progressTimer.Tick += ProgressTimer_Tick;
+        }
+        
+        private void InitializeAdbPath()
+        {
+            try
+            {
+                // 从嵌入式资源中提取ADB工具
+                string tempDir = Path.Combine(Path.GetTempPath(), "LyricSync_ADB");
+                if (!Directory.Exists(tempDir))
+                {
+                    Directory.CreateDirectory(tempDir);
+                }
+                
+                string adbExePath = Path.Combine(tempDir, "adb.exe");
+                string adbApiPath = Path.Combine(tempDir, "AdbWinApi.dll");
+                string adbUsbApiPath = Path.Combine(tempDir, "AdbWinUsbApi.dll");
+                
+                // 检查是否需要提取文件
+                bool needExtract = !File.Exists(adbExePath) || !File.Exists(adbApiPath) || !File.Exists(adbUsbApiPath);
+                
+                if (needExtract)
+                {
+                    LogMessage("🔧 正在从嵌入式资源中提取ADB工具...");
+                    
+                    // 提取adb.exe
+                    ExtractEmbeddedResource("adb.exe", adbExePath);
+                    
+                    // 提取AdbWinApi.dll
+                    ExtractEmbeddedResource("AdbWinApi.dll", adbApiPath);
+                    
+                    // 提取AdbWinUsbApi.dll
+                    ExtractEmbeddedResource("AdbWinUsbApi.dll", adbUsbApiPath);
+                    
+                    LogMessage("✅ ADB工具提取完成");
+                }
+                
+                adbPath = adbExePath;
+                LogMessage("✅ 内置ADB工具已就绪，路径: " + adbPath);
+                LogMessage("📱 可以开始连接Android设备");
+            }
+            catch (Exception ex)
+            {
+                LogMessage("❌ 初始化ADB工具失败: " + ex.Message);
+                adbPath = null;
+            }
+        }
+        
+        private void ExtractEmbeddedResource(string resourceName, string outputPath)
+        {
+            try
+            {
+                // 获取当前程序集
+                Assembly assembly = Assembly.GetExecutingAssembly();
+                
+                // 构建完整的资源名称（包含命名空间）
+                string fullResourceName = $"LyricSync.Windows.Tools.{resourceName}";
+                
+                // 从嵌入式资源中读取数据
+                using (Stream resourceStream = assembly.GetManifestResourceStream(fullResourceName))
+                {
+                    if (resourceStream == null)
+                    {
+                        throw new Exception($"找不到嵌入式资源: {fullResourceName}");
+                    }
+                    
+                    // 写入到临时文件
+                    using (FileStream fileStream = new FileStream(outputPath, FileMode.Create))
+                    {
+                        resourceStream.CopyTo(fileStream);
+                    }
+                }
+                
+                LogMessage($"✅ 已提取: {resourceName}");
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"提取资源 {resourceName} 失败: {ex.Message}");
+            }
         }
         
         private void ProgressTimer_Tick(object sender, EventArgs e)
@@ -64,7 +145,7 @@ namespace LyricSync.Windows
                 // 检查ADB是否可用
                 if (!await CheckAdbAvailable())
                 {
-                    MessageBox.Show("未找到ADB工具，请确保已安装Android SDK或ADB工具", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show("未找到内置ADB工具！\n\n请按以下步骤操作：\n1. 运行 download_adb_tools.bat 脚本下载ADB工具\n2. 或者手动将ADB工具复制到 Tools 目录\n3. 重新启动应用程序", "ADB工具缺失", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
                 
@@ -110,13 +191,22 @@ namespace LyricSync.Windows
         
         private async Task<bool> CheckAdbAvailable()
         {
+            // 检查ADB路径是否已设置
+            if (string.IsNullOrEmpty(adbPath))
+            {
+                LogMessage("❌ ADB工具路径未设置，请先下载ADB工具");
+                return false;
+            }
+            
             try
             {
+                LogMessage("🔍 正在检测内置ADB工具...");
+                
                 var process = new Process
                 {
                     StartInfo = new ProcessStartInfo
                     {
-                        FileName = "adb",
+                        FileName = adbPath,
                         Arguments = "version",
                         UseShellExecute = false,
                         RedirectStandardOutput = true,
@@ -127,27 +217,48 @@ namespace LyricSync.Windows
                 process.Start();
                 process.WaitForExit();
                 
-                return process.ExitCode == 0;
+                if (process.ExitCode == 0)
+                {
+                    LogMessage($"✅ 内置ADB工具检测成功: {adbPath}");
+                    LogMessage("🚀 ADB工具已就绪，可以开始连接设备");
+                    return true;
+                }
+                else
+                {
+                    LogMessage($"❌ 内置ADB工具检测失败，退出码: {process.ExitCode}");
+                    return false;
+                }
             }
-            catch
+            catch (Exception ex)
             {
+                LogMessage($"❌ 检测内置ADB工具时发生错误: {ex.Message}");
+                LogMessage("💡 请确保ADB工具文件完整且可执行");
                 return false;
             }
         }
         
         private async Task StartAdbLogcat()
         {
+            // 检查ADB路径是否已设置
+            if (string.IsNullOrEmpty(adbPath))
+            {
+                LogMessage("❌ 无法启动ADB logcat：ADB工具路径未设置");
+                throw new InvalidOperationException("ADB工具路径未设置");
+            }
+            
             try
             {
+                LogMessage("🧹 清理之前的ADB日志...");
                 // 先清理之前的日志
                 await ExecuteAdbCommand("logcat -c");
                 
+                LogMessage("📡 启动ADB logcat监听进程...");
                 // 启动logcat监听，过滤USB_MUSIC标签
                 adbProcess = new Process
                 {
                     StartInfo = new ProcessStartInfo
                     {
-                        FileName = "adb",
+                        FileName = adbPath,
                         Arguments = "logcat -s USB_MUSIC:D",
                         UseShellExecute = false,
                         RedirectStandardOutput = true,
@@ -164,11 +275,12 @@ namespace LyricSync.Windows
                 adbProcess.BeginOutputReadLine();
                 adbProcess.BeginErrorReadLine();
                 
-                LogMessage("ADB logcat进程已启动");
+                LogMessage("✅ ADB logcat进程已启动，正在监听USB_MUSIC标签");
+                LogMessage("🎵 请在Android设备上播放音乐，音乐信息将自动同步");
             }
             catch (Exception ex)
             {
-                LogMessage($"启动ADB logcat失败: {ex.Message}");
+                LogMessage($"❌ 启动ADB logcat失败: {ex.Message}");
                 throw;
             }
         }
@@ -258,13 +370,22 @@ namespace LyricSync.Windows
         
         private async Task ExecuteAdbCommand(string arguments)
         {
+            // 检查ADB路径是否已设置
+            if (string.IsNullOrEmpty(adbPath))
+            {
+                LogMessage("❌ 无法执行ADB命令：ADB工具路径未设置");
+                return;
+            }
+            
             try
             {
+                LogMessage($"🔧 执行ADB命令: {arguments}");
+                
                 var process = new Process
                 {
                     StartInfo = new ProcessStartInfo
                     {
-                        FileName = "adb",
+                        FileName = adbPath,
                         Arguments = arguments,
                         UseShellExecute = false,
                         RedirectStandardOutput = true,
@@ -277,12 +398,16 @@ namespace LyricSync.Windows
                 
                 if (process.ExitCode != 0)
                 {
-                    LogMessage($"ADB命令执行失败: {arguments}");
+                    LogMessage($"❌ ADB命令执行失败: {arguments}，退出码: {process.ExitCode}");
+                }
+                else
+                {
+                    LogMessage($"✅ ADB命令执行成功: {arguments}");
                 }
             }
             catch (Exception ex)
             {
-                LogMessage($"执行ADB命令失败: {ex.Message}");
+                LogMessage($"❌ 执行ADB命令时发生错误: {ex.Message}");
             }
         }
         
@@ -377,6 +502,13 @@ namespace LyricSync.Windows
         
         private async Task SendControlCommand(int keyCode)
         {
+            // 检查ADB路径是否已设置
+            if (string.IsNullOrEmpty(adbPath))
+            {
+                LogMessage("❌ 无法发送控制命令：ADB工具路径未设置");
+                return;
+            }
+            
             try
             {
                 // 通过ADB发送按键事件到安卓端
@@ -400,18 +532,59 @@ namespace LyricSync.Windows
                         break;
                 }
                 
-                LogMessage($"发送控制命令: {action}");
+                LogMessage($"🎮 发送音乐控制命令: {action}");
             }
             catch (Exception ex)
             {
-                LogMessage($"发送控制命令失败: {ex.Message}");
+                LogMessage($"❌ 发送控制命令失败: {ex.Message}");
             }
         }
         
         protected override void OnClosed(EventArgs e)
         {
             StopListening();
+            CleanupTempFiles();
             base.OnClosed(e);
+        }
+        
+        private void CleanupTempFiles()
+        {
+            try
+            {
+                // 清理临时ADB工具文件
+                string tempDir = Path.Combine(Path.GetTempPath(), "LyricSync_ADB");
+                if (Directory.Exists(tempDir))
+                {
+                    // 停止所有ADB进程
+                    if (adbProcess != null && !adbProcess.HasExited)
+                    {
+                        try
+                        {
+                            adbProcess.Kill();
+                            adbProcess.Dispose();
+                        }
+                        catch { }
+                    }
+                    
+                    // 等待一下让进程完全退出
+                    System.Threading.Thread.Sleep(1000);
+                    
+                    // 删除临时文件
+                    try
+                    {
+                        Directory.Delete(tempDir, true);
+                        LogMessage("🧹 临时ADB工具文件已清理");
+                    }
+                    catch (Exception ex)
+                    {
+                        LogMessage($"⚠️ 清理临时文件时出错: {ex.Message}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"⚠️ 清理临时文件时出错: {ex.Message}");
+            }
         }
     }
     
