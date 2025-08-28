@@ -600,6 +600,43 @@ namespace LyricSync.Windows
                             var song = searchResponse.Result.Songs[i];
                             LogMessage($"  {i + 1}. {song.Name} - {string.Join(", ", song.Artists?.Select(a => a.Name) ?? new List<string>())} (ID: {song.Id})");
                         }
+                        
+                        // 调试：输出最佳匹配歌曲的详细信息
+                        if (bestMatch != null)
+                        {
+                            LogMessage("🔍 最佳匹配歌曲详细信息:");
+                            LogMessage($"  歌曲名称: {bestMatch.Name}");
+                            LogMessage($"  歌曲ID: {bestMatch.Id}");
+                            LogMessage($"  时长: {bestMatch.Duration}");
+                            
+                            if (bestMatch.Album != null)
+                            {
+                                LogMessage($"  专辑名称: {bestMatch.Album.Name}");
+                                LogMessage($"  专辑ID: {bestMatch.Album.Id}");
+                                LogMessage($"  专辑picUrl: {bestMatch.Album.PicUrl ?? "null"}");
+                                LogMessage($"  专辑cover: {bestMatch.Album.Cover ?? "null"}");
+                                LogMessage($"  专辑img1v1Url: {bestMatch.Album.Img1v1Url ?? "null"}");
+                            }
+                            else
+                            {
+                                LogMessage("  专辑信息: null");
+                            }
+                            
+                            if (bestMatch.Artists != null && bestMatch.Artists.Count > 0)
+                            {
+                                for (int i = 0; i < bestMatch.Artists.Count; i++)
+                                {
+                                    var artist = bestMatch.Artists[i];
+                                    LogMessage($"  艺术家{i + 1}: {artist.Name} (ID: {artist.Id})");
+                                    LogMessage($"    艺术家picUrl: {artist.PicUrl ?? "null"}");
+                                    LogMessage($"    艺术家img1v1Url: {artist.Img1v1Url ?? "null"}");
+                                }
+                            }
+                            else
+                            {
+                                LogMessage("  艺术家信息: null");
+                            }
+                        }
                     }
                     else
                     {
@@ -1027,6 +1064,9 @@ namespace LyricSync.Windows
                         MatchedSongDuration.Text = $"⏱️ 时长: {FormatTime(matchedSong.Duration)}";
                         MatchedSongId.Text = $"🆔 歌曲ID: {matchedSong.Id}";
                         
+                        // 更新专辑封面
+                        UpdateAlbumCover(matchedSong);
+                        
                         // 显示格式化的JSON数据
                         try
                         {
@@ -1067,6 +1107,9 @@ namespace LyricSync.Windows
                     MatchedSongDuration.Text = "";
                     MatchedSongId.Text = "";
                     JsonDisplayTextBox.Text = "";
+                    
+                    // 重置封面显示
+                    SetDefaultCover();
                     
                     // 收起匹配信息区域
                     MatchedSongExpander.IsExpanded = false;
@@ -1115,6 +1158,9 @@ namespace LyricSync.Windows
                     MatchedSongDuration.Text = "";
                     MatchedSongId.Text = "";
                     JsonDisplayTextBox.Text = "搜索进行中，请稍候...";
+                    
+                    // 设置默认封面
+                    SetDefaultCover();
                     
                     // 展开匹配信息区域，显示等待搜索状态
                     MatchedSongExpander.IsExpanded = true;
@@ -1215,6 +1261,150 @@ namespace LyricSync.Windows
             catch
             {
                 return "unknown";
+            }
+        }
+        
+        /// <summary>
+        /// 更新专辑封面显示
+        /// </summary>
+        private async void UpdateAlbumCover(NeteaseSong matchedSong)
+        {
+            try
+            {
+                if (matchedSong == null)
+                {
+                    LogMessage("⚠️ 歌曲信息为空，使用默认封面");
+                    SetDefaultCover();
+                    return;
+                }
+                
+                // 尝试获取封面URL，按优先级排序
+                string coverUrl = null;
+                string coverSource = "";
+                
+                // 1. 优先使用专辑封面
+                if (matchedSong.Album != null)
+                {
+                    if (!string.IsNullOrEmpty(matchedSong.Album.PicUrl))
+                    {
+                        coverUrl = matchedSong.Album.PicUrl;
+                        coverSource = "专辑封面 (picUrl)";
+                    }
+                    else if (!string.IsNullOrEmpty(matchedSong.Album.Cover))
+                    {
+                        coverUrl = matchedSong.Album.Cover;
+                        coverSource = "专辑封面 (cover)";
+                    }
+                    else if (!string.IsNullOrEmpty(matchedSong.Album.Img1v1Url))
+                    {
+                        coverUrl = matchedSong.Album.Img1v1Url;
+                        coverSource = "专辑封面 (img1v1Url)";
+                    }
+                }
+                
+                // 2. 如果没有专辑封面，尝试使用艺术家头像
+                if (string.IsNullOrEmpty(coverUrl) && matchedSong.Artists != null && matchedSong.Artists.Count > 0)
+                {
+                    var firstArtist = matchedSong.Artists[0];
+                    if (!string.IsNullOrEmpty(firstArtist.Img1v1Url))
+                    {
+                        coverUrl = firstArtist.Img1v1Url;
+                        coverSource = $"艺术家头像 ({firstArtist.Name})";
+                    }
+                    else if (!string.IsNullOrEmpty(firstArtist.PicUrl))
+                    {
+                        coverUrl = firstArtist.PicUrl;
+                        coverSource = $"艺术家头像 ({firstArtist.Name})";
+                    }
+                }
+                
+                if (!string.IsNullOrEmpty(coverUrl))
+                {
+                    LogMessage($"🖼️ 找到封面: {coverSource} - {coverUrl}");
+                    await LoadAlbumCover(coverUrl);
+                }
+                else
+                {
+                    LogMessage("⚠️ 未找到任何封面URL，使用默认封面");
+                    LogMessage($"💡 调试信息 - 专辑: {matchedSong.Album?.Name ?? "null"}, 艺术家: {string.Join(", ", matchedSong.Artists?.Select(a => a.Name) ?? new List<string>())}");
+                    SetDefaultCover();
+                }
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"❌ 更新专辑封面失败: {ex.Message}");
+                SetDefaultCover();
+            }
+        }
+        
+        /// <summary>
+        /// 加载专辑封面
+        /// </summary>
+        private async Task LoadAlbumCover(string coverUrl)
+        {
+            try
+            {
+                LogMessage($"🔄 正在加载封面: {coverUrl}");
+                
+                using (var httpClient = new HttpClient())
+                {
+                    var imageBytes = await httpClient.GetByteArrayAsync(coverUrl);
+                    
+                    Dispatcher.Invoke(() =>
+                    {
+                        try
+                        {
+                            // 创建BitmapImage
+                            var bitmap = new System.Windows.Media.Imaging.BitmapImage();
+                            bitmap.BeginInit();
+                            bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                            bitmap.StreamSource = new System.IO.MemoryStream(imageBytes);
+                            bitmap.EndInit();
+                            
+                            // 设置封面图片
+                            AlbumCoverImage.Source = bitmap;
+                            
+                            // 隐藏默认音符图标
+                            DefaultMusicIcon.Visibility = System.Windows.Visibility.Collapsed;
+                            
+                            LogMessage($"✅ 封面加载成功");
+                        }
+                        catch (Exception ex)
+                        {
+                            LogMessage($"❌ 设置封面图片失败: {ex.Message}");
+                            SetDefaultCover();
+                        }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"❌ 下载封面失败: {ex.Message}");
+                SetDefaultCover();
+            }
+        }
+        
+        /// <summary>
+        /// 设置默认封面
+        /// </summary>
+        private void SetDefaultCover()
+        {
+            try
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    // 清除封面图片
+                    AlbumCoverImage.Source = null;
+                    
+                    // 显示默认音符图标
+                    DefaultMusicIcon.Visibility = System.Windows.Visibility.Visible;
+                    
+                    LogMessage("🎵 已设置默认音符图标");
+                });
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"设置默认封面失败: {ex.Message}");
             }
         }
         
@@ -1546,6 +1736,12 @@ namespace LyricSync.Windows
         
         [JsonProperty("name")]
         public string Name { get; set; }
+        
+        [JsonProperty("img1v1Url")]
+        public string Img1v1Url { get; set; }
+        
+        [JsonProperty("picUrl")]
+        public string PicUrl { get; set; }
     }
     
     public class NeteaseAlbum
@@ -1558,5 +1754,14 @@ namespace LyricSync.Windows
         
         [JsonProperty("artist")]
         public NeteaseArtist Artist { get; set; }
+        
+        [JsonProperty("picUrl")]
+        public string PicUrl { get; set; }
+        
+        [JsonProperty("cover")]
+        public string Cover { get; set; }
+        
+        [JsonProperty("img1v1Url")]
+        public string Img1v1Url { get; set; }
     }
 }
