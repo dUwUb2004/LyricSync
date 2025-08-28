@@ -429,8 +429,33 @@ namespace LyricSync.Windows
                     
                     Dispatcher.Invoke(() =>
                     {
+                        // 检查音乐信息是否真的发生了变化
+                        bool titleChanged = currentMusic?.Title != musicInfo.Title;
+                        bool artistChanged = currentMusic?.Artist != musicInfo.Artist;
+                        bool albumChanged = currentMusic?.Album != musicInfo.Album;
+                        
+                        // 只有在音乐信息真正变化时才清除匹配信息
+                        if ((titleChanged || artistChanged || albumChanged) && 
+                            (currentMusic?.MatchedSong != null || !string.IsNullOrEmpty(currentMusic?.SearchResponseJson)))
+                        {
+                            LogMessage($"🔄 检测到音乐信息变化，清除旧匹配信息");
+                            LogMessage($"  标题: {currentMusic?.Title} → {musicInfo.Title}");
+                            LogMessage($"  艺术家: {currentMusic?.Artist} → {musicInfo.Artist}");
+                            LogMessage($"  专辑: {currentMusic?.Album} → {musicInfo.Album}");
+                            
+                            // 清除匹配信息
+                            currentMusic.MatchedSong = null;
+                            currentMusic.SearchResponseJson = null;
+                        }
+                        else if (currentMusic?.MatchedSong != null)
+                        {
+                            LogMessage($"✅ 音乐信息未变化，保留现有匹配信息: {currentMusic.MatchedSong.Name}");
+                        }
+                        
+                        // 更新当前音乐信息
                         currentMusic = musicInfo;
-                        UpdateMusicDisplay(musicInfo);
+                        
+                        UpdateMusicDisplay(currentMusic);
                         LogMessage($"收到音乐信息: {musicInfo.Title ?? "未知标题"} - {musicInfo.Artist ?? "未知艺术家"}");
                         
                         if (musicInfo.IsPlaying)
@@ -545,6 +570,29 @@ namespace LyricSync.Windows
                         LogMessage($"💿 专辑: {bestMatch.Album?.Name ?? "未知"}");
                         LogMessage($"⏱️ 时长: {FormatTime(bestMatch.Duration)}");
                         
+                        // 保存匹配的歌曲信息到当前音乐对象
+                        SaveMatchedSongInfo(bestMatch, responseContent);
+                        
+                        // 立即更新UI显示匹配的歌曲信息
+                        UpdateMatchedSongDisplay(bestMatch, responseContent);
+                        
+                        // 重要：强制更新音乐显示，确保状态稳定
+                        if (currentMusic != null)
+                        {
+                            LogMessage($"🔄 强制更新音乐显示，确保匹配信息状态稳定");
+                            UpdateMusicDisplay(currentMusic);
+                            
+                            // 再次验证状态是否正确
+                            if (HasMatchedSongInfo())
+                            {
+                                LogMessage($"✅ 状态验证成功：匹配信息已稳定保存");
+                            }
+                            else
+                            {
+                                LogMessage($"⚠️ 状态验证失败：匹配信息未正确保存");
+                            }
+                        }
+                        
                         // 显示所有搜索结果供参考
                         LogMessage("📋 所有搜索结果:");
                         for (int i = 0; i < Math.Min(3, searchResponse.Result.Songs.Count); i++)
@@ -556,12 +604,26 @@ namespace LyricSync.Windows
                     else
                     {
                         LogMessage("⚠️ 未找到完全匹配的歌曲");
+                        // 清除之前的匹配信息
+                        if (currentMusic != null)
+                        {
+                            currentMusic.MatchedSong = null;
+                            currentMusic.SearchResponseJson = null;
+                        }
+                        ClearMatchedSongDisplay();
                     }
                 }
                 else
                 {
                     LogMessage("❌ 网易云API返回空结果");
                     LogMessage($"💡 响应内容: {responseContent}");
+                    // 清除匹配信息
+                    if (currentMusic != null)
+                    {
+                        currentMusic.MatchedSong = null;
+                        currentMusic.SearchResponseJson = null;
+                    }
+                    ClearMatchedSongDisplay();
                 }
             }
             catch (Exception ex)
@@ -739,6 +801,35 @@ namespace LyricSync.Windows
             AlbumName.Text = music.Album ?? "未知专辑";
             
             UpdateProgressBar();
+            
+            // 严格的状态保护：有匹配信息时绝对不覆盖
+            if (HasMatchedSongInfo())
+            {
+                // 有匹配信息就显示，并且强制保护状态
+                LogMessage($"🛡️ 状态保护：保持匹配信息显示 - {music.MatchedSong.Name}");
+                UpdateMatchedSongDisplay(music.MatchedSong, music.SearchResponseJson);
+                return; // 重要：有匹配信息时直接返回，不执行后续逻辑
+            }
+            
+            // 没有匹配信息时的处理
+            if (string.IsNullOrEmpty(music.Title) || music.Title == "未播放")
+            {
+                ClearMatchedSongDisplay();
+            }
+            else
+            {
+                // 只有在确实没有匹配信息且音乐正在播放时才显示等待搜索状态
+                // 额外检查：确保当前UI不是显示匹配信息状态
+                string currentState = GetCurrentDisplayState();
+                if (currentState != "matched")
+                {
+                    ShowWaitingForSearchStatus();
+                }
+                else
+                {
+                    LogMessage($"⚠️ 状态冲突：UI显示匹配信息但数据中没有，保持当前显示");
+                }
+            }
         }
         
         private void UpdateProgressBar()
@@ -759,6 +850,9 @@ namespace LyricSync.Windows
             ProgressBar.Value = 0;
             CurrentTime.Text = "0:00";
             TotalTime.Text = "0:00";
+            
+            // 清除匹配歌曲信息
+            ClearMatchedSongDisplay();
         }
         
         private string FormatTime(long milliseconds)
@@ -915,6 +1009,215 @@ namespace LyricSync.Windows
             }
         }
         
+        /// <summary>
+        /// 更新匹配歌曲信息显示
+        /// </summary>
+        private void UpdateMatchedSongDisplay(NeteaseSong matchedSong, string jsonResponse)
+        {
+            try
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    if (matchedSong != null)
+                    {
+                        // 显示匹配的歌曲信息
+                        MatchedSongTitle.Text = $"🎵 {matchedSong.Name}";
+                        MatchedSongArtist.Text = $"👤 艺术家: {string.Join(", ", matchedSong.Artists?.Select(a => a.Name) ?? new List<string>())}";
+                        MatchedSongAlbum.Text = $"💿 专辑: {matchedSong.Album?.Name ?? "未知"}";
+                        MatchedSongDuration.Text = $"⏱️ 时长: {FormatTime(matchedSong.Duration)}";
+                        MatchedSongId.Text = $"🆔 歌曲ID: {matchedSong.Id}";
+                        
+                        // 显示格式化的JSON数据
+                        try
+                        {
+                            var formattedJson = FormatJson(jsonResponse);
+                            JsonDisplayTextBox.Text = formattedJson;
+                        }
+                        catch
+                        {
+                            JsonDisplayTextBox.Text = jsonResponse;
+                        }
+                        
+                        // 展开匹配信息区域
+                        MatchedSongExpander.IsExpanded = true;
+                        
+                        LogMessage($"🎯 匹配歌曲信息显示完成: {matchedSong.Name}");
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"更新匹配歌曲显示失败: {ex.Message}");
+                LogMessage($"❌ 更新匹配歌曲显示失败: {ex.Message}");
+            }
+        }
+        
+        /// <summary>
+        /// 清除匹配歌曲信息显示
+        /// </summary>
+        private void ClearMatchedSongDisplay()
+        {
+            try
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    MatchedSongTitle.Text = "未找到匹配歌曲";
+                    MatchedSongArtist.Text = "";
+                    MatchedSongAlbum.Text = "";
+                    MatchedSongDuration.Text = "";
+                    MatchedSongId.Text = "";
+                    JsonDisplayTextBox.Text = "";
+                    
+                    // 收起匹配信息区域
+                    MatchedSongExpander.IsExpanded = false;
+                    
+                    LogMessage("🧹 已清除匹配歌曲显示");
+                });
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"清除匹配歌曲显示失败: {ex.Message}");
+            }
+        }
+        
+        /// <summary>
+        /// 显示等待搜索状态
+        /// </summary>
+        private void ShowWaitingForSearchStatus()
+        {
+            try
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    // 检查当前是否已经是等待搜索状态，避免重复设置
+                    if (MatchedSongTitle.Text == "⏳ 等待搜索...")
+                    {
+                        return; // 已经是等待搜索状态，不需要重复设置
+                    }
+                    
+                    // 重要：如果当前显示的是匹配信息，绝对不要覆盖
+                    if (MatchedSongTitle.Text.StartsWith("🎵"))
+                    {
+                        LogMessage($"🛡️ 状态保护：当前显示匹配信息，不覆盖为等待搜索状态");
+                        return;
+                    }
+                    
+                    // 额外检查：如果当前音乐对象有匹配信息，也不应该显示等待搜索
+                    if (HasMatchedSongInfo())
+                    {
+                        LogMessage($"🛡️ 状态保护：当前音乐有匹配信息，不显示等待搜索状态");
+                        return;
+                    }
+                    
+                    MatchedSongTitle.Text = "⏳ 等待搜索...";
+                    MatchedSongArtist.Text = "等待网易云音乐搜索完成";
+                    MatchedSongAlbum.Text = "";
+                    MatchedSongDuration.Text = "";
+                    MatchedSongId.Text = "";
+                    JsonDisplayTextBox.Text = "搜索进行中，请稍候...";
+                    
+                    // 展开匹配信息区域，显示等待搜索状态
+                    MatchedSongExpander.IsExpanded = true;
+                    
+                    LogMessage("⏳ 显示等待搜索状态");
+                });
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"显示等待搜索状态失败: {ex.Message}");
+                LogMessage($"❌ 显示等待搜索状态失败: {ex.Message}");
+            }
+        }
+        
+        /// <summary>
+        /// 格式化JSON字符串，使其更易读
+        /// </summary>
+        private string FormatJson(string json)
+        {
+            try
+            {
+                var obj = JsonConvert.DeserializeObject(json);
+                return JsonConvert.SerializeObject(obj, Formatting.Indented);
+            }
+            catch
+            {
+                return json;
+            }
+        }
+        
+        /// <summary>
+        /// 保存匹配的歌曲信息到当前音乐对象
+        /// </summary>
+        private void SaveMatchedSongInfo(NeteaseSong matchedSong, string jsonResponse)
+        {
+            try
+            {
+                if (currentMusic != null && matchedSong != null)
+                {
+                    // 清除旧的匹配信息
+                    if (currentMusic.MatchedSong != null)
+                    {
+                        LogMessage($"🔄 更新匹配信息: {currentMusic.MatchedSong.Name} → {matchedSong.Name}");
+                    }
+                    else
+                    {
+                        LogMessage($"💾 新增匹配信息: {matchedSong.Name}");
+                    }
+                    
+                    currentMusic.MatchedSong = matchedSong;
+                    currentMusic.SearchResponseJson = jsonResponse;
+                    
+                    LogMessage($"✅ 匹配歌曲信息已保存: {matchedSong.Name} (ID: {matchedSong.Id})");
+                }
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"❌ 保存匹配歌曲信息失败: {ex.Message}");
+            }
+        }
+        
+        /// <summary>
+        /// 检查当前音乐是否已有匹配信息
+        /// </summary>
+        private bool HasMatchedSongInfo()
+        {
+            return currentMusic?.MatchedSong != null && 
+                   !string.IsNullOrEmpty(currentMusic.SearchResponseJson);
+        }
+        
+        /// <summary>
+        /// 检查当前UI显示状态
+        /// </summary>
+        private string GetCurrentDisplayState()
+        {
+            try
+            {
+                return Dispatcher.Invoke(() =>
+                {
+                    if (MatchedSongTitle.Text.StartsWith("🎵"))
+                    {
+                        return "matched"; // 显示匹配信息
+                    }
+                    else if (MatchedSongTitle.Text == "⏳ 等待搜索...")
+                    {
+                        return "waiting_for_search"; // 等待搜索
+                    }
+                    else if (MatchedSongTitle.Text == "未找到匹配歌曲")
+                    {
+                        return "not_found"; // 未找到
+                    }
+                    else
+                    {
+                        return "unknown"; // 未知状态
+                    }
+                });
+            }
+            catch
+            {
+                return "unknown";
+            }
+        }
+        
         private async void PlayPauseButton_Click(object sender, RoutedEventArgs e)
         {
             if (isListening)
@@ -1004,11 +1307,32 @@ namespace LyricSync.Windows
                 
                 LogMessage($"🧪 测试音乐信息: {testMusicInfo.Title} - {testMusicInfo.Artist}");
                 
-                // 手动测试时，强制更新搜索状态
+                // 手动测试时，清除旧的匹配信息并显示等待搜索状态
+                if (currentMusic != null)
+                {
+                    currentMusic.MatchedSong = null;
+                    currentMusic.SearchResponseJson = null;
+                    LogMessage("🧪 测试模式：清除旧匹配信息");
+                }
+                
+                // 强制更新搜索状态
                 lastSearchedTitle = null;
+                
+                // 显示等待搜索状态
+                ShowWaitingForSearchStatus();
                 
                 // 执行搜索
                 await SearchNeteaseMusic(testMusicInfo);
+                
+                // 验证匹配信息是否保存
+                if (HasMatchedSongInfo())
+                {
+                    LogMessage("✅ 测试完成，匹配信息已保存");
+                }
+                else
+                {
+                    LogMessage("⚠️ 测试完成，但匹配信息未保存");
+                }
                 
                 LogMessage("🧪 手动测试搜索完成");
             }
@@ -1143,6 +1467,12 @@ namespace LyricSync.Windows
         
         [JsonProperty("duration")]
         public long Duration { get; set; } = 0;
+        
+        // 网易云API匹配的歌曲信息
+        public NeteaseSong MatchedSong { get; set; }
+        
+        // 完整的API响应JSON
+        public string SearchResponseJson { get; set; }
     }
     
     // 网易云音乐API数据模型

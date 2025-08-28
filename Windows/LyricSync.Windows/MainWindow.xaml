@@ -143,6 +143,33 @@
                                     Style="{StaticResource ControlButtonStyle}"
                                     Click="TestSearchButton_Click"/>
                         </StackPanel>
+                        
+                        <!-- 匹配歌曲信息 -->
+                        <Expander x:Name="MatchedSongExpander" Header="🎯 网易云匹配信息" 
+                                  Margin="0,20,0,0" IsExpanded="False">
+                            <StackPanel x:Name="MatchedSongPanel" Margin="0,10,0,0">
+                                <TextBlock x:Name="MatchedSongTitle" Text="未找到匹配歌曲" 
+                                           FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
+                                <TextBlock x:Name="MatchedSongArtist" Text="" 
+                                           FontSize="14" Foreground="#666" Margin="0,0,0,5"/>
+                                <TextBlock x:Name="MatchedSongAlbum" Text="" 
+                                           FontSize="14" Foreground="#666" Margin="0,0,0,5"/>
+                                <TextBlock x:Name="MatchedSongDuration" Text="" 
+                                           FontSize="14" Foreground="#666" Margin="0,0,0,5"/>
+                                <TextBlock x:Name="MatchedSongId" Text="" 
+                                           FontSize="14" Foreground="#666" Margin="0,0,0,10"/>
+                                
+                                <!-- JSON信息显示 -->
+                                <Expander Header="📄 完整JSON数据" Margin="0,10,0,0" IsExpanded="False">
+                                    <ScrollViewer Height="200" VerticalScrollBarVisibility="Auto">
+                                        <TextBox x:Name="JsonDisplayTextBox" IsReadOnly="True" 
+                                                 Background="#F8F8F8" BorderThickness="0" 
+                                                 FontFamily="Consolas" FontSize="11" 
+                                                 TextWrapping="Wrap"/>
+                                    </ScrollViewer>
+                                </Expander>
+                            </StackPanel>
+                        </Expander>
                     </StackPanel>
                 </Border>
                 
