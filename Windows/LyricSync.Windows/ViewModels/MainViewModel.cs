@@ -21,6 +21,7 @@ namespace LyricSync.Windows.ViewModels
         private readonly ILogger logger;
         private readonly DispatcherTimer progressTimer;
         private LyricWindow lyricWindow;
+        private DesktopLyricWindow desktopLyricWindow;
         private ObservableCollection<LyricLine> currentLyricLines = new ObservableCollection<LyricLine>();
         private int currentLyricIndex = -1;
         
@@ -123,7 +124,7 @@ namespace LyricSync.Windows.ViewModels
         {
             try
             {
-                if (lyricWindow == null || currentLyricLines == null || currentLyricLines.Count == 0)
+                if ((lyricWindow == null && desktopLyricWindow == null) || currentLyricLines == null || currentLyricLines.Count == 0)
                 {
                     return;
                 }
@@ -146,7 +147,14 @@ namespace LyricSync.Windows.ViewModels
                 if (index != -1 && index != currentLyricIndex)
                 {
                     currentLyricIndex = index;
-                    lyricWindow.HighlightLine(index);
+                    if (lyricWindow != null)
+                    {
+                        lyricWindow.HighlightLine(index);
+                    }
+                    if (desktopLyricWindow != null)
+                    {
+                        desktopLyricWindow.HighlightLine(index);
+                    }
                 }
             }
             catch (Exception ex)
@@ -350,6 +358,11 @@ namespace LyricSync.Windows.ViewModels
                     {
                         logger.LogMessage("🔄 检测到切歌，正在刷新歌词窗口为当前歌曲...");
                         await RefreshLyricsForCurrentSongAsync();
+                    }
+                    if (desktopLyricWindow != null)
+                    {
+                        logger.LogMessage("🔄 检测到切歌，正在刷新桌面歌词窗口...");
+                        await RefreshDesktopLyricsForCurrentSongAsync();
                     }
                 }
                 else
@@ -579,6 +592,53 @@ namespace LyricSync.Windows.ViewModels
         }
 
         /// <summary>
+        /// 打开桌面歌词窗口并加载当前歌曲歌词
+        /// </summary>
+        public async Task<bool> OpenDesktopLyricWindowAsync()
+        {
+            try
+            {
+                if (!HasMatchedSongInfo())
+                {
+                    logger.LogMessage("❌ 没有匹配的歌曲信息，无法显示桌面歌词");
+                    return false;
+                }
+
+                if (desktopLyricWindow != null)
+                {
+                    desktopLyricWindow.Activate();
+                    return true;
+                }
+
+                var lyricResponse = await neteaseService.GetLyricAsync(currentMusic.MatchedSong.Id);
+                if (lyricResponse == null || string.IsNullOrEmpty(lyricResponse.Lrc?.Lyric))
+                {
+                    logger.LogMessage("❌ 未获取到可用歌词");
+                    return false;
+                }
+
+                var parsed = LrcParser.ParseFromNeteaseResponse(lyricResponse);
+                currentLyricLines = new System.Collections.ObjectModel.ObservableCollection<LyricLine>(parsed);
+                currentLyricIndex = -1;
+
+                desktopLyricWindow = new DesktopLyricWindow();
+                desktopLyricWindow.SetLyrics(currentLyricLines);
+                desktopLyricWindow.Closed += (s, e) => { desktopLyricWindow = null; };
+                desktopLyricWindow.Show();
+
+                SyncLyricHighlight();
+
+                logger.LogMessage("✅ 桌面歌词窗口已打开");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                logger.LogMessage($"❌ 打开桌面歌词窗口失败: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
         /// 刷新歌词窗口为当前匹配歌曲的歌词（含翻译）
         /// </summary>
         private async Task RefreshLyricsForCurrentSongAsync()
@@ -626,6 +686,43 @@ namespace LyricSync.Windows.ViewModels
             catch (Exception ex)
             {
                 logger.LogMessage($"❌ 刷新当前歌曲歌词失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 刷新桌面歌词窗口为当前歌曲歌词
+        /// </summary>
+        private async Task RefreshDesktopLyricsForCurrentSongAsync()
+        {
+            try
+            {
+                if (desktopLyricWindow == null || !HasMatchedSongInfo())
+                {
+                    return;
+                }
+
+                var lyricResponse = await neteaseService.GetLyricAsync(currentMusic.MatchedSong.Id);
+                if (lyricResponse == null || string.IsNullOrEmpty(lyricResponse.Lrc?.Lyric))
+                {
+                    logger.LogMessage("⚠️ 当前歌曲未获取到可用歌词");
+                    return;
+                }
+
+                var parsed = LrcParser.ParseFromNeteaseResponse(lyricResponse);
+                currentLyricLines = new System.Collections.ObjectModel.ObservableCollection<LyricLine>(parsed);
+                currentLyricIndex = -1;
+
+                await desktopLyricWindow.Dispatcher.InvokeAsync(() =>
+                {
+                    desktopLyricWindow.SetLyrics(currentLyricLines);
+                    SyncLyricHighlight();
+                });
+
+                logger.LogMessage("✅ 桌面歌词已刷新为当前歌曲");
+            }
+            catch (Exception ex)
+            {
+                logger.LogMessage($"❌ 刷新桌面歌词失败: {ex.Message}");
             }
         }
 

@@ -234,6 +234,30 @@ namespace LyricSync.Windows
             }
         }
 
+        private async void ShowDesktopLyricButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                ShowDesktopLyricButton.IsEnabled = false;
+                ShowDesktopLyricButton.Content = "⏳ 打开中...";
+
+                bool ok = await viewModel.OpenDesktopLyricWindowAsync();
+                if (!ok)
+                {
+                    logger.LogMessage("❌ 打开桌面歌词窗口失败");
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogMessage($"❌ 打开桌面歌词窗口时发生异常: {ex.Message}");
+            }
+            finally
+            {
+                ShowDesktopLyricButton.IsEnabled = true;
+                ShowDesktopLyricButton.Content = "🪟 桌面歌词";
+            }
+        }
+
         private async void ExportLrcButton_Click(object sender, RoutedEventArgs e)
         {
             try

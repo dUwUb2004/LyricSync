@@ -148,6 +148,9 @@
                             <Button x:Name="ShowLyricButton" Content="🪄 显示歌词" 
                                     Style="{StaticResource ControlButtonStyle}"
                                     Click="ShowLyricButton_Click"/>
+                            <Button x:Name="ShowDesktopLyricButton" Content="🪟 桌面歌词" 
+                                    Style="{StaticResource ControlButtonStyle}"
+                                    Click="ShowDesktopLyricButton_Click"/>
                         </StackPanel>
                         
                         <!-- 匹配歌曲信息 -->
