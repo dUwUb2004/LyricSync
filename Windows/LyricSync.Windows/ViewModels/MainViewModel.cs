@@ -789,6 +789,15 @@ namespace LyricSync.Windows.ViewModels
 
         public MusicInfo CurrentMusic => currentMusic;
 
+        /// <summary>
+        /// 获取当前的桌面歌词窗口
+        /// </summary>
+        /// <returns>桌面歌词窗口实例，如果未打开返回null</returns>
+        public DesktopLyricWindow GetDesktopLyricWindow()
+        {
+            return desktopLyricWindow;
+        }
+
         public void Dispose()
         {
             try

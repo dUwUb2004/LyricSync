@@ -258,6 +258,28 @@ namespace LyricSync.Windows
             }
         }
 
+        private void SettingsButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // 获取当前的桌面歌词窗口
+                var desktopWindow = viewModel.GetDesktopLyricWindow();
+                
+                var settingsWindow = new SettingsWindow(logger, desktopWindow);
+                settingsWindow.Owner = this;
+                
+                var result = settingsWindow.ShowDialog();
+                if (result == true)
+                {
+                    logger.LogMessage("✅ 设置已应用");
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogMessage($"❌ 打开设置窗口时发生异常: {ex.Message}");
+            }
+        }
+
         private async void ExportLrcButton_Click(object sender, RoutedEventArgs e)
         {
             try
