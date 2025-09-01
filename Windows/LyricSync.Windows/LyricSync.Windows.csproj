@@ -54,12 +54,22 @@
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="App.xaml.cs">
-      <DependentUpon>App.xaml</DependentUpon>
-      <SubType>Code</SubType>
-    </Compile>
+    <Compile Include="Models\MusicInfo.cs" />
+    <Compile Include="Models\NeteaseModels.cs" />
+    <Compile Include="Services\AdbService.cs" />
+    <Compile Include="Services\NeteaseMusicService.cs" />
+    <Compile Include="Services\UIService.cs" />
+    <Compile Include="Utils\ILogger.cs" />
+    <Compile Include="Utils\Logger.cs" />
+    <Compile Include="Utils\TimeFormatter.cs" />
+    <Compile Include="Utils\JsonFormatter.cs" />
+    <Compile Include="ViewModels\MainViewModel.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="App.xaml.cs">
+      <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
