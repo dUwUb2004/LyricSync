@@ -7,7 +7,9 @@ using System.Windows.Threading;
 using LyricSync.Windows.Models;
 using LyricSync.Windows.Services;
 using LyricSync.Windows.Utils;
+using LyricSync.Windows; // for LyricWindow
 using Newtonsoft.Json;
+using System.Collections.ObjectModel;
 
 namespace LyricSync.Windows.ViewModels
 {
@@ -18,6 +20,9 @@ namespace LyricSync.Windows.ViewModels
         private readonly UIService uiService;
         private readonly ILogger logger;
         private readonly DispatcherTimer progressTimer;
+        private LyricWindow lyricWindow;
+        private ObservableCollection<LyricLine> currentLyricLines = new ObservableCollection<LyricLine>();
+        private int currentLyricIndex = -1;
         
         private bool isListening = false;
         private MusicInfo currentMusic;
@@ -109,6 +114,44 @@ namespace LyricSync.Windows.ViewModels
             if (currentMusic != null && currentMusic.IsPlaying)
             {
                 currentMusic.Position += 1000; // 增加1秒
+                // 同步歌词高亮
+                SyncLyricHighlight();
+            }
+        }
+
+        private void SyncLyricHighlight()
+        {
+            try
+            {
+                if (lyricWindow == null || currentLyricLines == null || currentLyricLines.Count == 0)
+                {
+                    return;
+                }
+
+                double currentSeconds = currentMusic?.Position > 0 ? currentMusic.Position / 1000.0 : 0;
+
+                int index = -1;
+                for (int i = 0; i < currentLyricLines.Count; i++)
+                {
+                    if (currentLyricLines[i].TimeSeconds <= currentSeconds)
+                    {
+                        index = i;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                if (index != -1 && index != currentLyricIndex)
+                {
+                    currentLyricIndex = index;
+                    lyricWindow.HighlightLine(index);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogMessage($"❌ 同步歌词高亮失败: {ex.Message}");
             }
         }
 
@@ -457,6 +500,59 @@ namespace LyricSync.Windows.ViewModels
         private bool HasMatchedSongInfo()
         {
             return currentMusic?.MatchedSong != null;
+        }
+
+        /// <summary>
+        /// 打开歌词窗口并加载当前歌曲的歌词
+        /// </summary>
+        public async Task<bool> OpenLyricWindowAsync()
+        {
+            try
+            {
+                if (!HasMatchedSongInfo())
+                {
+                    logger.LogMessage("❌ 没有匹配的歌曲信息，无法显示歌词");
+                    return false;
+                }
+
+                // 如果窗口已存在，直接激活
+                if (lyricWindow != null)
+                {
+                    lyricWindow.Activate();
+                    return true;
+                }
+
+                // 获取歌词（JSON）
+                var lyricResponse = await neteaseService.GetLyricAsync(currentMusic.MatchedSong.Id);
+                if (lyricResponse == null || string.IsNullOrEmpty(lyricResponse.Lrc?.Lyric))
+                {
+                    logger.LogMessage("❌ 未获取到可用歌词");
+                    return false;
+                }
+
+                // 转换为LRC（只取原歌词，不含翻译），然后解析为行
+                var lrcContent = neteaseService.ConvertToLrcFormat(lyricResponse, false, false);
+                var parsed = LrcParser.Parse(lrcContent);
+                currentLyricLines = new System.Collections.ObjectModel.ObservableCollection<LyricLine>(parsed);
+                currentLyricIndex = -1;
+
+                // 打开窗口
+                lyricWindow = new LyricWindow();
+                lyricWindow.SetLyrics(currentLyricLines);
+                lyricWindow.Closed += (s, e) => { lyricWindow = null; };
+                lyricWindow.Show();
+
+                // 立即同步一次高亮
+                SyncLyricHighlight();
+
+                logger.LogMessage("✅ 歌词窗口已打开");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                logger.LogMessage($"❌ 打开歌词窗口失败: {ex.Message}");
+                return false;
+            }
         }
 
         /// <summary>
