@@ -8,7 +8,7 @@
     <Window.Resources>
         <!-- 按钮样式 -->
         <Style x:Key="ControlButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="#006C4C"/>
+            <Setter Property="Background" Value="#303f9f"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Padding" Value="20,10"/>
@@ -27,10 +27,10 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#005A3F"/>
+                                <Setter Property="Background" Value="#3f51b5"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Background" Value="#004A33"/>
+                                <Setter Property="Background" Value="#303f9f"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -60,7 +60,7 @@
         </Grid.RowDefinitions>
         
         <!-- 标题栏 -->
-        <Border Grid.Row="0" Background="#006C4C" Padding="20,15">
+        <Border Grid.Row="0" Background="#303f9f" Padding="20,15">
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="🎵" FontSize="24" VerticalAlignment="Center" Margin="0,0,15,0"/>
                 <TextBlock Text="LyricSync" FontSize="24" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
@@ -123,7 +123,7 @@
                             
                             <TextBlock x:Name="CurrentTime" Grid.Column="0" Text="0:00" FontSize="12" Foreground="#666"/>
                             <ProgressBar x:Name="ProgressBar" Grid.Column="1" Height="4" Margin="10,0" 
-                                         Background="#E0E0E0" Foreground="#006C4C" VerticalAlignment="Center"/>
+                                         Background="#E0E0E0" Foreground="#303f9f" VerticalAlignment="Center"/>
                             <TextBlock x:Name="TotalTime" Grid.Column="2" Text="0:00" FontSize="12" Foreground="#666"/>
                         </Grid>
                         
