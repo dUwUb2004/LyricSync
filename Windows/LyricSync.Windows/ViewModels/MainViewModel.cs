@@ -459,6 +459,67 @@ namespace LyricSync.Windows.ViewModels
             return currentMusic?.MatchedSong != null;
         }
 
+        /// <summary>
+        /// 导出当前匹配歌曲的LRC歌词
+        /// </summary>
+        public async Task<bool> ExportLrcLyricAsync()
+        {
+            try
+            {
+                // 检查是否有匹配的歌曲
+                if (!HasMatchedSongInfo())
+                {
+                    logger.LogMessage("❌ 没有匹配的歌曲信息，无法导出歌词");
+                    return false;
+                }
+
+                var matchedSong = currentMusic.MatchedSong;
+                logger.LogMessage($"🎵 开始导出歌曲 '{matchedSong.Name}' 的LRC歌词...");
+
+                // 获取歌词
+                var lyricResponse = await neteaseService.GetLyricAsync(matchedSong.Id);
+                if (lyricResponse == null)
+                {
+                    logger.LogMessage("❌ 获取歌词失败，无法导出");
+                    return false;
+                }
+
+                // 转换为LRC格式
+                var lrcContent = neteaseService.ConvertToLrcFormat(lyricResponse, true, false);
+                if (string.IsNullOrEmpty(lrcContent))
+                {
+                    logger.LogMessage("❌ 转换LRC格式失败，无法导出");
+                    return false;
+                }
+
+                // 生成文件名
+                string fileName = $"{matchedSong.Name} - {string.Join(", ", matchedSong.Artists?.Select(a => a.Name) ?? new List<string>())}.lrc";
+                // 清理文件名中的非法字符
+                fileName = System.IO.Path.GetInvalidFileNameChars().Aggregate(fileName, (current, c) => current.Replace(c, '_'));
+
+                // 使用UIService显示保存对话框
+                string filePath = uiService.ShowSaveFileDialog("保存LRC歌词文件", fileName, "LRC文件 (*.lrc)|*.lrc|所有文件 (*.*)|*.*");
+                if (string.IsNullOrEmpty(filePath))
+                {
+                    logger.LogMessage("⚠️ 用户取消了保存操作");
+                    return false;
+                }
+
+                // 保存文件
+                System.IO.File.WriteAllText(filePath, lrcContent, System.Text.Encoding.UTF8);
+                
+                logger.LogMessage($"✅ LRC歌词导出成功: {filePath}");
+                logger.LogMessage($"📄 文件大小: {new System.IO.FileInfo(filePath).Length} 字节");
+                
+                return true;
+            }
+            catch (Exception ex)
+            {
+                logger.LogMessage($"❌ 导出LRC歌词失败: {ex.Message}");
+                return false;
+            }
+        }
+
         public MusicInfo CurrentMusic => currentMusic;
 
         public void Dispose()
