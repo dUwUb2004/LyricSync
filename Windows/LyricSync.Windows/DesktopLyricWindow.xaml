@@ -13,13 +13,9 @@
             <Border.ContextMenu>
                 <ContextMenu>
                     <MenuItem Header="锁定窗口" IsCheckable="True" IsChecked="{Binding IsLocked, Mode=TwoWay}"/>
-                    <MenuItem x:Name="ClickThroughMenuItem" Header="点击穿透" IsCheckable="True" Checked="ClickThroughMenuItem_Checked" Unchecked="ClickThroughMenuItem_Unchecked"/>
-                    <Separator/>
-                    <MenuItem Header="不透明度 60%" Click="Opacity60_Click"/>
-                    <MenuItem Header="不透明度 80%" Click="Opacity80_Click"/>
-                    <MenuItem Header="不透明度 100%" Click="Opacity100_Click"/>
-                    <Separator/>
                     <MenuItem Header="显示翻译" IsCheckable="True" IsChecked="{Binding ShowTranslation, Mode=TwoWay}"/>
+                    <Separator/>
+                    <MenuItem Header="设置..." Click="Settings_Click"/>
                     <Separator/>
                     <MenuItem Header="关闭" Click="Close_Click"/>
                 </ContextMenu>

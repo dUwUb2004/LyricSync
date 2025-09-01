@@ -1,3 +1,4 @@
+using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -100,41 +101,28 @@ namespace LyricSync.Windows
             }
         }
 
-        private void ClickThroughMenuItem_Checked(object sender, RoutedEventArgs e)
+        private void Settings_Click(object sender, RoutedEventArgs e)
         {
-            TrySetClickThrough(true);
-        }
-
-        private void ClickThroughMenuItem_Unchecked(object sender, RoutedEventArgs e)
-        {
-            TrySetClickThrough(false);
-        }
-
-        private void Opacity60_Click(object sender, RoutedEventArgs e)
-        {
-            OpacityPercent = 60;
-        }
-
-        private void Opacity80_Click(object sender, RoutedEventArgs e)
-        {
-            OpacityPercent = 80;
-        }
-
-        private void Opacity100_Click(object sender, RoutedEventArgs e)
-        {
-            OpacityPercent = 100;
+            try
+            {
+                // 创建并显示设置窗口，传入当前窗口实例
+                var settingsWindow = new SettingsWindow(null, this); // TODO: 传入logger
+                var result = settingsWindow.ShowDialog();
+                
+                if (result == true)
+                {
+                    // 设置已在SettingsWindow中应用
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"打开设置窗口失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void Close_Click(object sender, RoutedEventArgs e)
         {
             Close();
-        }
-
-        private void TrySetClickThrough(bool enable)
-        {
-            // 通过切换窗口的命中测试实现点击穿透：当启用时禁用 IsHitTestVisible
-            // 若需系统级穿透可使用 Win32 扩展样式 WS_EX_TRANSPARENT
-            this.IsHitTestVisible = !enable;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
