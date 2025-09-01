@@ -259,6 +259,161 @@ namespace LyricSync.Windows.Services
         }
 
         /// <summary>
+        /// 将网易云歌词JSON转换为LRC格式
+        /// </summary>
+        /// <param name="lyricResponse">歌词响应对象</param>
+        /// <param name="includeTranslation">是否包含翻译歌词</param>
+        /// <param name="includeRomalrc">是否包含罗马音歌词</param>
+        /// <returns>LRC格式的歌词字符串</returns>
+        public string ConvertToLrcFormat(NeteaseLyricResponse lyricResponse, bool includeTranslation = true, bool includeRomalrc = false)
+        {
+            try
+            {
+                if (lyricResponse == null)
+                {
+                    logger.LogMessage("❌ 歌词响应对象为空，无法转换");
+                    return null;
+                }
+
+                logger.LogMessage("🔄 开始转换歌词为LRC格式...");
+
+                var lrcBuilder = new System.Text.StringBuilder();
+                
+                // 添加LRC文件头信息
+                lrcBuilder.AppendLine("[ti:歌曲标题]");
+                lrcBuilder.AppendLine("[ar:艺术家]");
+                lrcBuilder.AppendLine("[al:专辑]");
+                lrcBuilder.AppendLine("[by:LyricSync]");
+                lrcBuilder.AppendLine();
+
+                // 处理原歌词
+                if (!string.IsNullOrEmpty(lyricResponse.Lrc?.Lyric))
+                {
+                    logger.LogMessage("📝 处理原歌词...");
+                    var originalLines = lyricResponse.Lrc.Lyric.Split('\n');
+                    var processedLines = 0;
+
+                    foreach (var line in originalLines)
+                    {
+                        if (string.IsNullOrWhiteSpace(line)) continue;
+
+                        // 检查是否包含时间标签
+                        if (line.Contains('[') && line.Contains(']'))
+                        {
+                            // 提取时间标签和歌词内容
+                            var timeMatch = System.Text.RegularExpressions.Regex.Match(line, @"\[(\d{2}:\d{2}\.\d{2})\]");
+                            if (timeMatch.Success)
+                            {
+                                var timeTag = timeMatch.Groups[1].Value;
+                                var lyricContent = line.Substring(timeMatch.Index + timeMatch.Length).Trim();
+                                
+                                // 跳过纯时间标签行（没有歌词内容）
+                                if (!string.IsNullOrWhiteSpace(lyricContent))
+                                {
+                                    lrcBuilder.AppendLine($"[{timeTag}]{lyricContent}");
+                                    processedLines++;
+                                }
+                            }
+                            else
+                            {
+                                // 处理其他格式的时间标签
+                                lrcBuilder.AppendLine(line);
+                                processedLines++;
+                            }
+                        }
+                        else
+                        {
+                            // 没有时间标签的行，直接添加
+                            lrcBuilder.AppendLine(line);
+                            processedLines++;
+                        }
+                    }
+
+                    logger.LogMessage($"✅ 原歌词处理完成，共处理 {processedLines} 行");
+                }
+
+                // 处理翻译歌词
+                if (includeTranslation && !string.IsNullOrEmpty(lyricResponse.Tlyric?.Lyric))
+                {
+                    logger.LogMessage("🌐 处理翻译歌词...");
+                    lrcBuilder.AppendLine();
+                    lrcBuilder.AppendLine("[翻译歌词]");
+                    
+                    var translationLines = lyricResponse.Tlyric.Lyric.Split('\n');
+                    var processedTranslationLines = 0;
+
+                    foreach (var line in translationLines)
+                    {
+                        if (string.IsNullOrWhiteSpace(line)) continue;
+
+                        // 检查是否包含时间标签
+                        if (line.Contains('[') && line.Contains(']'))
+                        {
+                            var timeMatch = System.Text.RegularExpressions.Regex.Match(line, @"\[(\d{2}:\d{2}\.\d{2})\]");
+                            if (timeMatch.Success)
+                            {
+                                var timeTag = timeMatch.Groups[1].Value;
+                                var lyricContent = line.Substring(timeMatch.Index + timeMatch.Length).Trim();
+                                
+                                if (!string.IsNullOrWhiteSpace(lyricContent))
+                                {
+                                    lrcBuilder.AppendLine($"[{timeTag}]{lyricContent}");
+                                    processedTranslationLines++;
+                                }
+                            }
+                        }
+                    }
+
+                    logger.LogMessage($"✅ 翻译歌词处理完成，共处理 {processedTranslationLines} 行");
+                }
+
+                // 处理罗马音歌词
+                if (includeRomalrc && !string.IsNullOrEmpty(lyricResponse.Romalrc?.Lyric))
+                {
+                    logger.LogMessage("🎵 处理罗马音歌词...");
+                    lrcBuilder.AppendLine();
+                    lrcBuilder.AppendLine("[罗马音歌词]");
+                    
+                    var romalrcLines = lyricResponse.Romalrc.Lyric.Split('\n');
+                    var processedRomalrcLines = 0;
+
+                    foreach (var line in romalrcLines)
+                    {
+                        if (string.IsNullOrWhiteSpace(line)) continue;
+
+                        if (line.Contains('[') && line.Contains(']'))
+                        {
+                            var timeMatch = System.Text.RegularExpressions.Regex.Match(line, @"\[(\d{2}:\d{2}\.\d{2})\]");
+                            if (timeMatch.Success)
+                            {
+                                var timeTag = timeMatch.Groups[1].Value;
+                                var lyricContent = line.Substring(timeMatch.Index + timeMatch.Length).Trim();
+                                
+                                if (!string.IsNullOrWhiteSpace(lyricContent))
+                                {
+                                    lrcBuilder.AppendLine($"[{timeTag}]{lyricContent}");
+                                    processedRomalrcLines++;
+                                }
+                            }
+                        }
+                    }
+
+                    logger.LogMessage($"✅ 罗马音歌词处理完成，共处理 {processedRomalrcLines} 行");
+                }
+
+                var lrcContent = lrcBuilder.ToString();
+                logger.LogMessage($"🎵 LRC格式转换完成，总长度: {lrcContent.Length} 字符");
+                
+                return lrcContent;
+            }
+            catch (Exception ex)
+            {
+                logger.LogMessage($"❌ 转换LRC格式失败: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
         /// 根据歌曲ID获取歌词
         /// </summary>
         /// <param name="songId">歌曲ID</param>
