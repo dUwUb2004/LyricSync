@@ -56,6 +56,7 @@
   <ItemGroup>
     <Compile Include="Models\MusicInfo.cs" />
     <Compile Include="Models\NeteaseModels.cs" />
+    <Compile Include="Models\LyricLine.cs" />
     <Compile Include="Services\AdbService.cs" />
     <Compile Include="Services\NeteaseMusicService.cs" />
     <Compile Include="Services\UIService.cs" />
@@ -63,9 +64,14 @@
     <Compile Include="Utils\Logger.cs" />
     <Compile Include="Utils\TimeFormatter.cs" />
     <Compile Include="Utils\JsonFormatter.cs" />
+    <Compile Include="Utils\LrcParser.cs" />
     <Compile Include="ViewModels\MainViewModel.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="LyricWindow.xaml.cs">
+      <DependentUpon>LyricWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="App.xaml.cs">
@@ -80,6 +86,10 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Page Include="MainWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="LyricWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>

@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Windows;
+using LyricSync.Windows.Models;
 
 namespace LyricSync.Windows
 {
@@ -29,11 +30,5 @@ namespace LyricSync.Windows
                 LyricListBox.ScrollIntoView(LyricListBox.SelectedItem);
             }
         }
-    }
-
-    public class LyricLine
-    {
-        public string Text { get; set; }
-        public double Time { get; set; } // 秒
     }
 }

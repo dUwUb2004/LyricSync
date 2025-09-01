@@ -17,6 +17,13 @@
                  HorizontalContentAlignment="Center"
                  VerticalContentAlignment="Center"
                  IsHitTestVisible="False">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding Text}"
+                               TextWrapping="Wrap"
+                               TextAlignment="Center"/>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
             <ListBox.ItemContainerStyle>
                 <Style TargetType="ListBoxItem">
                     <Setter Property="Background" Value="Transparent"/>
