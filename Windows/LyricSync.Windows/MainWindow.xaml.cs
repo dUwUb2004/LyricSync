@@ -211,6 +211,29 @@ namespace LyricSync.Windows
             }
         }
 
+        private async void ShowLyricButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                ShowLyricButton.IsEnabled = false;
+                ShowLyricButton.Content = "⏳ 打开中...";
+                bool ok = await viewModel.OpenLyricWindowAsync();
+                if (!ok)
+                {
+                    MessageBox.Show("无法打开歌词窗口，请确认已匹配到歌曲并成功获取歌词。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogMessage($"❌ 打开歌词窗口失败: {ex.Message}");
+            }
+            finally
+            {
+                ShowLyricButton.IsEnabled = true;
+                ShowLyricButton.Content = "🪄 显示歌词";
+            }
+        }
+
         private async void ExportLrcButton_Click(object sender, RoutedEventArgs e)
         {
             try
