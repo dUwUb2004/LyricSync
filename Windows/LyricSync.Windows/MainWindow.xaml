@@ -259,38 +259,8 @@
                                 Content="← 返回主页" 
                                 HorizontalAlignment="Left"
                                 Margin="0,0,0,20"
-                                Padding="15,8"
-                                FontSize="14"
-                                FontWeight="Medium"
-                                Background="#4A90E2"
-                                Foreground="White"
-                                BorderThickness="0"
-                                Click="BackToMainButton_Click">
-                            <Button.Style>
-                                <Style TargetType="Button">
-                                    <Setter Property="Template">
-                                        <Setter.Value>
-                                            <ControlTemplate TargetType="Button">
-                                                <Border Background="{TemplateBinding Background}" 
-                                                        CornerRadius="6"
-                                                        Padding="{TemplateBinding Padding}">
-                                                    <ContentPresenter HorizontalAlignment="Center" 
-                                                                      VerticalAlignment="Center"/>
-                                                </Border>
-                                                <ControlTemplate.Triggers>
-                                                    <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter Property="Background" Value="#357ABD"/>
-                                                    </Trigger>
-                                                    <Trigger Property="IsPressed" Value="True">
-                                                        <Setter Property="Background" Value="#2C5F94"/>
-                                                    </Trigger>
-                                                </ControlTemplate.Triggers>
-                                            </ControlTemplate>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Style>
-                            </Button.Style>
-                        </Button>
+                                Style="{StaticResource ControlButtonStyle}"
+                                Click="BackToMainButton_Click"/>
                         <!-- 桌面歌词设置 -->
                         <Border Style="{StaticResource CardStyle}">
                             <StackPanel>
