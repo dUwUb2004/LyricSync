@@ -142,6 +142,9 @@
                             <Button x:Name="TestSearchButton" Content="🧪 测试搜索" 
                                     Style="{StaticResource ControlButtonStyle}"
                                     Click="TestSearchButton_Click"/>
+                            <Button x:Name="ExportLrcButton" Content="📄 导出LRC歌词" 
+                                    Style="{StaticResource ControlButtonStyle}"
+                                    Click="ExportLrcButton_Click"/>
                         </StackPanel>
                         
                         <!-- 匹配歌曲信息 -->

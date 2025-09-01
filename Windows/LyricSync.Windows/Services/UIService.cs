@@ -484,5 +484,44 @@ namespace LyricSync.Windows.Services
                 }
             });
         }
+
+        /// <summary>
+        /// 显示保存文件对话框
+        /// </summary>
+        /// <param name="title">对话框标题</param>
+        /// <param name="defaultFileName">默认文件名</param>
+        /// <param name="filter">文件过滤器</param>
+        /// <returns>选择的文件路径，如果取消则返回null</returns>
+        public string ShowSaveFileDialog(string title, string defaultFileName, string filter)
+        {
+            try
+            {
+                var saveFileDialog = new Microsoft.Win32.SaveFileDialog
+                {
+                    Title = title,
+                    FileName = defaultFileName,
+                    Filter = filter,
+                    DefaultExt = "lrc",
+                    AddExtension = true
+                };
+
+                bool? result = saveFileDialog.ShowDialog();
+                if (result == true)
+                {
+                    logger.LogMessage($"📁 用户选择保存文件: {saveFileDialog.FileName}");
+                    return saveFileDialog.FileName;
+                }
+                else
+                {
+                    logger.LogMessage("⚠️ 用户取消了保存文件对话框");
+                    return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogMessage($"❌ 显示保存文件对话框失败: {ex.Message}");
+                return null;
+            }
+        }
     }
 }

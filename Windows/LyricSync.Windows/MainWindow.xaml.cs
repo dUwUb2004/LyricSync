@@ -211,6 +211,40 @@ namespace LyricSync.Windows
             }
         }
 
+        private async void ExportLrcButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // 禁用按钮防止重复点击
+                ExportLrcButton.IsEnabled = false;
+                ExportLrcButton.Content = "⏳ 导出中...";
+                
+                logger.LogMessage("🎵 用户点击导出LRC歌词按钮");
+                
+                // 调用ViewModel的导出方法
+                bool success = await viewModel.ExportLrcLyricAsync();
+                
+                if (success)
+                {
+                    logger.LogMessage("✅ LRC歌词导出完成");
+                }
+                else
+                {
+                    logger.LogMessage("❌ LRC歌词导出失败");
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogMessage($"❌ 导出LRC歌词时发生异常: {ex.Message}");
+            }
+            finally
+            {
+                // 恢复按钮状态
+                ExportLrcButton.IsEnabled = true;
+                ExportLrcButton.Content = "📄 导出LRC歌词";
+            }
+        }
+
         private void OnMusicInfoUpdated(Models.MusicInfo musicInfo)
         {
             if (musicInfo != null)
