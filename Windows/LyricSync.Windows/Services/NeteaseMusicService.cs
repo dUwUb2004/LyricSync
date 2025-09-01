@@ -155,6 +155,18 @@ namespace LyricSync.Windows.Services
                             logger.LogMessage($"  {i + 1}. {song.Name} - {string.Join(", ", song.Artists?.Select(a => a.Name) ?? new List<string>())} (ID: {song.Id})");
                         }
                         
+                        // 自动获取歌词
+                        logger.LogMessage("🎵 开始自动获取歌词...");
+                        var lyricResponse = await GetLyricAsync(bestMatch.Id);
+                        if (lyricResponse != null)
+                        {
+                            logger.LogMessage("✅ 歌词获取完成");
+                        }
+                        else
+                        {
+                            logger.LogMessage("⚠️ 歌词获取失败，但歌曲匹配成功");
+                        }
+                        
                         return bestMatch;
                     }
                     else
@@ -244,6 +256,84 @@ namespace LyricSync.Windows.Services
             
             TimeSpan time = TimeSpan.FromMilliseconds(milliseconds);
             return $"{(int)time.TotalMinutes}:{time.Seconds:D2}";
+        }
+
+        /// <summary>
+        /// 根据歌曲ID获取歌词
+        /// </summary>
+        /// <param name="songId">歌曲ID</param>
+        /// <returns>歌词响应对象，如果获取失败返回null</returns>
+        public async Task<NeteaseLyricResponse> GetLyricAsync(long songId)
+        {
+            try
+            {
+                logger.LogMessage($"🎵 正在获取歌曲ID {songId} 的歌词...");
+                
+                string lyricUrl = $"{NETEASE_API_BASE}/lyric?id={songId}";
+                logger.LogMessage($"📡 发送歌词请求: {lyricUrl}");
+                
+                var response = await httpClient.GetAsync(lyricUrl);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    logger.LogMessage("✅ 歌词请求成功");
+                    
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    logger.LogMessage($"📡 歌词API响应: {responseContent.Substring(0, Math.Min(200, responseContent.Length))}...");
+                    
+                    var lyricResponse = JsonConvert.DeserializeObject<NeteaseLyricResponse>(responseContent);
+                    
+                    if (lyricResponse != null)
+                    {
+                        if (lyricResponse.Code == 200)
+                        {
+                            // 检查是否有歌词内容
+                            bool hasLyric = !string.IsNullOrEmpty(lyricResponse.Lrc?.Lyric);
+                            bool hasTranslation = !string.IsNullOrEmpty(lyricResponse.Tlyric?.Lyric);
+                            bool hasRomalrc = !string.IsNullOrEmpty(lyricResponse.Romalrc?.Lyric);
+                            
+                            logger.LogMessage($"🎵 歌词获取成功:");
+                            logger.LogMessage($"   - 原歌词: {(hasLyric ? "✅ 有" : "❌ 无")}");
+                            logger.LogMessage($"   - 翻译歌词: {(hasTranslation ? "✅ 有" : "❌ 无")}");
+                            logger.LogMessage($"   - 罗马音歌词: {(hasRomalrc ? "✅ 有" : "❌ 无")}");
+                            
+                            if (hasLyric)
+                            {
+                                // 统计歌词行数
+                                var lyricLines = lyricResponse.Lrc.Lyric.Split('\n')
+                                    .Where(line => !string.IsNullOrWhiteSpace(line) && line.Contains(']'))
+                                    .Count();
+                                logger.LogMessage($"   - 歌词行数: {lyricLines} 行");
+                            }
+                            
+                            return lyricResponse;
+                        }
+                        else
+                        {
+                            logger.LogMessage($"❌ 歌词API返回错误代码: {lyricResponse.Code}");
+                            return null;
+                        }
+                    }
+                    else
+                    {
+                        logger.LogMessage("❌ 歌词响应解析失败");
+                        return null;
+                    }
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    logger.LogMessage($"❌ 歌词请求失败，状态码: {response.StatusCode}");
+                    logger.LogMessage($"💡 错误响应: {errorContent}");
+                    return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogMessage($"❌ 获取歌词失败: {ex.Message}");
+                logger.LogMessage($"💡 请检查网络连接和API服务器状态");
+                return null;
+            }
         }
 
         public void Dispose()

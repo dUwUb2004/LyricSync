@@ -119,4 +119,29 @@ namespace LyricSync.Windows.Models
         [JsonProperty("img1v1Url")]
         public string Img1v1Url { get; set; }
     }
+    
+    // 歌词API响应模型
+    public class NeteaseLyricResponse
+    {
+        [JsonProperty("code")]
+        public int Code { get; set; }
+        
+        [JsonProperty("lrc")]
+        public NeteaseLyric Lrc { get; set; }
+        
+        [JsonProperty("tlyric")]
+        public NeteaseLyric Tlyric { get; set; }
+        
+        [JsonProperty("romalrc")]
+        public NeteaseLyric Romalrc { get; set; }
+    }
+    
+    public class NeteaseLyric
+    {
+        [JsonProperty("version")]
+        public int Version { get; set; }
+        
+        [JsonProperty("lyric")]
+        public string Lyric { get; set; }
+    }
 }
