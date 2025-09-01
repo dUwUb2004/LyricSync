@@ -15,8 +15,6 @@
                     <MenuItem Header="锁定窗口" IsCheckable="True" IsChecked="{Binding IsLocked, Mode=TwoWay}"/>
                     <MenuItem Header="显示翻译" IsCheckable="True" IsChecked="{Binding ShowTranslation, Mode=TwoWay}"/>
                     <Separator/>
-                    <MenuItem Header="设置..." Click="Settings_Click"/>
-                    <Separator/>
                     <MenuItem Header="关闭" Click="Close_Click"/>
                 </ContextMenu>
             </Border.ContextMenu>

@@ -103,24 +103,7 @@ namespace LyricSync.Windows
             }
         }
 
-        private void Settings_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                // 创建并显示设置窗口，传入当前窗口实例
-                var settingsWindow = new SettingsWindow(null, this); // TODO: 传入logger
-                var result = settingsWindow.ShowDialog();
-                
-                if (result == true)
-                {
-                    // 设置已在SettingsWindow中应用
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"打开设置窗口失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
+
 
         private void Close_Click(object sender, RoutedEventArgs e)
         {

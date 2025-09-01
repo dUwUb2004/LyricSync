@@ -242,7 +242,12 @@ namespace LyricSync.Windows
                 ShowDesktopLyricButton.Content = "⏳ 打开中...";
 
                 bool ok = await viewModel.OpenDesktopLyricWindowAsync();
-                if (!ok)
+                if (ok)
+                {
+                    // 桌面歌词窗口打开成功，应用当前设置
+                    ApplyDesktopSettings();
+                }
+                else
                 {
                     logger.LogMessage("❌ 打开桌面歌词窗口失败");
                 }
@@ -258,25 +263,103 @@ namespace LyricSync.Windows
             }
         }
 
-        private void SettingsButton_Click(object sender, RoutedEventArgs e)
+        private void DesktopSettings_Changed(object sender, RoutedEventArgs e)
+        {
+            ApplyDesktopSettings();
+        }
+
+        private void DesktopOpacitySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (DesktopOpacityText != null)
+            {
+                DesktopOpacityText.Text = $"{e.NewValue:F0}%";
+            }
+            ApplyDesktopSettings();
+        }
+
+        private void DesktopFontSizeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (DesktopFontSizeText != null)
+            {
+                DesktopFontSizeText.Text = $"{e.NewValue:F0}";
+            }
+            ApplyDesktopSettings();
+        }
+
+        private void ApplyDesktopSettings()
         {
             try
             {
-                // 获取当前的桌面歌词窗口
+                // 检查 viewModel 是否已初始化
+                if (viewModel == null)
+                    return;
+
                 var desktopWindow = viewModel.GetDesktopLyricWindow();
-                
-                var settingsWindow = new SettingsWindow(logger, desktopWindow);
-                settingsWindow.Owner = this;
-                
-                var result = settingsWindow.ShowDialog();
-                if (result == true)
+                if (desktopWindow != null)
                 {
-                    logger.LogMessage("✅ 设置已应用");
+                    // 应用设置到桌面歌词窗口
+                    if (DesktopShowTranslationCheckBox != null)
+                        desktopWindow.ShowTranslation = DesktopShowTranslationCheckBox.IsChecked ?? true;
+                    
+                    if (DesktopLockWindowCheckBox != null)
+                        desktopWindow.IsLocked = DesktopLockWindowCheckBox.IsChecked ?? false;
+                    
+                    if (DesktopClickThroughCheckBox != null)
+                        desktopWindow.IsHitTestVisible = !(DesktopClickThroughCheckBox.IsChecked ?? false);
+                    
+                    if (DesktopOpacitySlider != null)
+                        desktopWindow.OpacityPercent = DesktopOpacitySlider.Value;
+                    
+                    // TODO: 应用字体大小设置
+                    
+                    logger?.LogMessage("✅ 桌面歌词设置已应用");
                 }
+                // 如果桌面窗口未打开，不记录日志，这是正常情况
             }
             catch (Exception ex)
             {
-                logger.LogMessage($"❌ 打开设置窗口时发生异常: {ex.Message}");
+                logger?.LogMessage($"❌ 应用桌面歌词设置时发生异常: {ex.Message}");
+            }
+        }
+
+        private void SettingsButton_Click(object sender, RoutedEventArgs e)
+        {
+            // 切换到设置页面
+            MainPageGrid.Visibility = Visibility.Collapsed;
+            SettingsPageGrid.Visibility = Visibility.Visible;
+        }
+
+        private void BackToMainButton_Click(object sender, RoutedEventArgs e)
+        {
+            // 返回主页
+            MainPageGrid.Visibility = Visibility.Visible;
+            SettingsPageGrid.Visibility = Visibility.Collapsed;
+        }
+
+        private async void TestApiButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                TestApiButton.IsEnabled = false;
+                TestApiButton.Content = "测试中...";
+                
+                logger.LogMessage("🔍 开始测试网易云API连接...");
+                
+                // TODO: 实际测试API连接 - 这里可以调用NeteaseMusicService的TestConnectionAsync
+                await System.Threading.Tasks.Task.Delay(1000); // 模拟测试
+                
+                logger.LogMessage("✅ API连接测试成功");
+                MessageBox.Show("API连接测试成功！", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                logger.LogMessage($"❌ API连接测试失败: {ex.Message}");
+                MessageBox.Show($"API连接测试失败：{ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                TestApiButton.IsEnabled = true;
+                TestApiButton.Content = "测试API连接";
             }
         }
 

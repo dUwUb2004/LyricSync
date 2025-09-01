@@ -69,8 +69,11 @@
         </Border>
         
         <!-- 主内容区域 -->
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="20">
-            <StackPanel>
+        <Grid Grid.Row="1">
+            <!-- 主页内容 -->
+            <Grid x:Name="MainPageGrid" Visibility="Visible">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
+                    <StackPanel>
                 <!-- 连接状态卡片 -->
                 <Border Style="{StaticResource CardStyle}">
                     <StackPanel>
@@ -148,14 +151,17 @@
                             <Button x:Name="ShowLyricButton" Content="🪄 显示歌词" 
                                     Style="{StaticResource ControlButtonStyle}"
                                     Click="ShowLyricButton_Click"/>
-                            <Button x:Name="ShowDesktopLyricButton" Content="🪟 桌面歌词" 
+                                                            <Button x:Name="ShowDesktopLyricButton" Content="🪟 桌面歌词" 
                                     Style="{StaticResource ControlButtonStyle}"
                                     Click="ShowDesktopLyricButton_Click"/>
-                            <Button x:Name="SettingsButton" Content="⚙️ 设置" 
+                                
+                                <Button x:Name="SettingsButton" Content="⚙️ 设置" 
                                     Style="{StaticResource ControlButtonStyle}"
                                     Click="SettingsButton_Click"/>
+
                         </StackPanel>
                         
+
                         <!-- 匹配歌曲信息 -->
                         <Expander x:Name="MatchedSongExpander" Header="🎯 网易云匹配信息" 
                                   Margin="0,20,0,0" IsExpanded="False">
@@ -240,8 +246,142 @@
                                    Margin="0,10,0,0" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Border>
-            </StackPanel>
-        </ScrollViewer>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
+            
+            <!-- 设置页面内容 -->
+            <Grid x:Name="SettingsPageGrid" Visibility="Collapsed">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
+                    <StackPanel>
+                        <!-- 返回按钮 -->
+                        <Button x:Name="BackToMainButton" 
+                                Content="← 返回主页" 
+                                HorizontalAlignment="Left"
+                                Margin="0,0,0,20"
+                                Padding="15,8"
+                                FontSize="14"
+                                FontWeight="Medium"
+                                Background="#4A90E2"
+                                Foreground="White"
+                                BorderThickness="0"
+                                Click="BackToMainButton_Click">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border Background="{TemplateBinding Background}" 
+                                                        CornerRadius="6"
+                                                        Padding="{TemplateBinding Padding}">
+                                                    <ContentPresenter HorizontalAlignment="Center" 
+                                                                      VerticalAlignment="Center"/>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Background" Value="#357ABD"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsPressed" Value="True">
+                                                        <Setter Property="Background" Value="#2C5F94"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                        <!-- 桌面歌词设置 -->
+                        <Border Style="{StaticResource CardStyle}">
+                            <StackPanel>
+                                <TextBlock Text="桌面歌词设置" FontSize="18" FontWeight="Bold" Margin="0,0,0,15"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <!-- 左列 -->
+                                    <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                                        <CheckBox x:Name="DesktopShowTranslationCheckBox" 
+                                                  Content="显示翻译" 
+                                                  Margin="0,0,0,15"
+                                                  IsChecked="True"
+                                                  Checked="DesktopSettings_Changed"
+                                                  Unchecked="DesktopSettings_Changed"/>
+                                        <CheckBox x:Name="DesktopLockWindowCheckBox"
+                                                  Content="锁定窗口"
+                                                  Margin="0,0,0,15"
+                                                  Checked="DesktopSettings_Changed"
+                                                  Unchecked="DesktopSettings_Changed"/>
+                                        <CheckBox x:Name="DesktopClickThroughCheckBox"
+                                                  Content="点击穿透"
+                                                  Margin="0,0,0,15"
+                                                  Checked="DesktopSettings_Changed"
+                                                  Unchecked="DesktopSettings_Changed"/>
+                                    </StackPanel>
+                                    
+                                    <!-- 右列 -->
+                                    <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                                        <StackPanel Margin="0,0,0,15">
+                                            <TextBlock Text="透明度" FontSize="14" FontWeight="Medium" Margin="0,0,0,8"/>
+                                            <StackPanel Orientation="Horizontal">
+                                                <Slider x:Name="DesktopOpacitySlider"
+                                                        Minimum="20" Maximum="100"
+                                                        Value="90"
+                                                        Width="150"
+                                                        ValueChanged="DesktopOpacitySlider_ValueChanged"/>
+                                                <TextBlock x:Name="DesktopOpacityText"
+                                                           Text="90%"
+                                                           Margin="15,0,0,0"
+                                                           VerticalAlignment="Center"
+                                                           FontWeight="Medium"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                        
+                                        <StackPanel>
+                                            <TextBlock Text="字体大小" FontSize="14" FontWeight="Medium" Margin="0,0,0,8"/>
+                                            <StackPanel Orientation="Horizontal">
+                                                <Slider x:Name="DesktopFontSizeSlider"
+                                                        Minimum="18" Maximum="48"
+                                                        Value="28"
+                                                        Width="150"
+                                                        ValueChanged="DesktopFontSizeSlider_ValueChanged"/>
+                                                <TextBlock x:Name="DesktopFontSizeText"
+                                                           Text="28"
+                                                           Margin="15,0,0,0"
+                                                           VerticalAlignment="Center"
+                                                           FontWeight="Medium"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                        
+                        <!-- 网易云API设置 -->
+                        <Border Style="{StaticResource CardStyle}">
+                            <StackPanel>
+                                <TextBlock Text="网易云API设置" FontSize="18" FontWeight="Bold" Margin="0,0,0,15"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
+                                    <TextBlock Text="API地址:" VerticalAlignment="Center" Margin="0,0,15,0" FontWeight="Medium"/>
+                                    <TextBox x:Name="ApiUrlTextBox"
+                                             Text="http://localhost:3000"
+                                             Width="300"
+                                             VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <Button x:Name="TestApiButton"
+                                        Content="测试API连接"
+                                        Width="120"
+                                        HorizontalAlignment="Left"
+                                        Style="{StaticResource ControlButtonStyle}"
+                                        Click="TestApiButton_Click"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
+        </Grid>
         
         <!-- 底部状态栏 -->
         <Border Grid.Row="2" Background="#E8E8E8" Padding="20,10" BorderBrush="#D0D0D0" BorderThickness="0,1,0,0">
