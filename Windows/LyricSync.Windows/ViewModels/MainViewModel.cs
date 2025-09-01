@@ -623,6 +623,7 @@ namespace LyricSync.Windows.ViewModels
 
                 desktopLyricWindow = new DesktopLyricWindow();
                 desktopLyricWindow.SetLyrics(currentLyricLines);
+                desktopLyricWindow.SendControlAsync = async (key) => await SendControlCommandAsync(key);
                 desktopLyricWindow.Closed += (s, e) => { desktopLyricWindow = null; };
                 desktopLyricWindow.Show();
 

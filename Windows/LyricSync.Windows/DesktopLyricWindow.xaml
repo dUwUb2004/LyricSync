@@ -20,43 +20,100 @@
                     <MenuItem Header="关闭" Click="Close_Click"/>
                 </ContextMenu>
             </Border.ContextMenu>
-            <StackPanel>
-                <!-- 主歌词 -->
-                <TextBlock Text="{Binding CurrentLine.Text}"
-                           FontSize="28"
-                           Foreground="White"
-                           TextAlignment="Center"
-                           TextWrapping="Wrap">
-                    <TextBlock.Effect>
-                        <DropShadowEffect Color="#AA000000" BlurRadius="8" ShadowDepth="0"/>
-                    </TextBlock.Effect>
-                </TextBlock>
-                <!-- 翻译歌词 -->
-                <TextBlock Text="{Binding CurrentLine.Translation}"
-                           Margin="0,6,0,0"
-                           FontSize="20"
-                           Foreground="#CCDDDDDD"
-                           TextAlignment="Center"
-                           TextWrapping="Wrap">
-                    <TextBlock.Style>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="Visibility" Value="Collapsed"/>
-                            <Style.Triggers>
-                                <MultiDataTrigger>
-                                    <MultiDataTrigger.Conditions>
-                                        <Condition Binding="{Binding ShowTranslation}" Value="True"/>
-                                        <Condition Binding="{Binding CurrentLine.HasTranslation}" Value="True"/>
-                                    </MultiDataTrigger.Conditions>
-                                    <Setter Property="Visibility" Value="Visible"/>
-                                </MultiDataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </TextBlock.Style>
-                    <TextBlock.Effect>
-                        <DropShadowEffect Color="#AA000000" BlurRadius="6" ShadowDepth="0"/>
-                    </TextBlock.Effect>
-                </TextBlock>
-            </StackPanel>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- 顶部控制按钮（无背景，按下高亮） -->
+                <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,8">
+                    <Button Content="⏮" Width="36" Height="28" Margin="4,0" Click="PrevButton_Click">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="Foreground" Value="White"/>
+                                <Setter Property="BorderThickness" Value="0"/>
+                                <Setter Property="Cursor" Value="Hand"/>
+                                <Style.Triggers>
+                                    <Trigger Property="IsPressed" Value="True">
+                                        <Setter Property="Background" Value="#44FFFFFF"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <Button Content="⏯" Width="48" Height="28" Margin="4,0" Click="PlayPauseButton_Click">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="Foreground" Value="White"/>
+                                <Setter Property="BorderThickness" Value="0"/>
+                                <Setter Property="Cursor" Value="Hand"/>
+                                <Style.Triggers>
+                                    <Trigger Property="IsPressed" Value="True">
+                                        <Setter Property="Background" Value="#44FFFFFF"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <Button Content="⏭" Width="36" Height="28" Margin="4,0" Click="NextButton_Click">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="Foreground" Value="White"/>
+                                <Setter Property="BorderThickness" Value="0"/>
+                                <Setter Property="Cursor" Value="Hand"/>
+                                <Style.Triggers>
+                                    <Trigger Property="IsPressed" Value="True">
+                                        <Setter Property="Background" Value="#44FFFFFF"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </StackPanel>
+
+                <!-- 歌词内容 -->
+                <StackPanel Grid.Row="1">
+                    <!-- 主歌词 -->
+                    <TextBlock Text="{Binding CurrentLine.Text}"
+                               FontSize="28"
+                               Foreground="White"
+                               TextAlignment="Center"
+                               TextWrapping="Wrap">
+                        <TextBlock.Effect>
+                            <DropShadowEffect Color="#AA000000" BlurRadius="8" ShadowDepth="0"/>
+                        </TextBlock.Effect>
+                    </TextBlock>
+                    <!-- 翻译歌词 -->
+                    <TextBlock Text="{Binding CurrentLine.Translation}"
+                               Margin="0,6,0,0"
+                               FontSize="20"
+                               Foreground="#CCDDDDDD"
+                               TextAlignment="Center"
+                               TextWrapping="Wrap">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding ShowTranslation}" Value="True"/>
+                                            <Condition Binding="{Binding CurrentLine.HasTranslation}" Value="True"/>
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                        <TextBlock.Effect>
+                            <DropShadowEffect Color="#AA000000" BlurRadius="6" ShadowDepth="0"/>
+                        </TextBlock.Effect>
+                    </TextBlock>
+                </StackPanel>
+            </Grid>
         </Border>
     </Grid>
 </Window>
