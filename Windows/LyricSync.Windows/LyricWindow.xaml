@@ -1,38 +1,94 @@
 <Window x:Class="LyricSync.Windows.LyricWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="歌词显示" Height="400" Width="500"
+        Title="歌词显示" Height="500" Width="600"
         WindowStartupLocation="CenterScreen"
         ResizeMode="CanResizeWithGrip"
         Topmost="True"
         Background="#222">
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        
+        <!-- 控制栏 -->
+        <Border Grid.Row="0" Background="#333" Padding="10,5">
+            <StackPanel Orientation="Horizontal">
+            <CheckBox x:Name="ShowTranslationCheckBox" 
+                      Content="显示翻译" 
+                      Foreground="White"
+                      FontSize="14"
+                      IsChecked="{Binding ShowTranslation}"
+                      Margin="0,0,15,0"/>
+            <TextBlock Text="字体大小:" Foreground="White" VerticalAlignment="Center" Margin="0,0,5,0"/>
+            <Slider x:Name="FontSizeSlider" 
+                    Minimum="12" Maximum="36" 
+                    Value="{Binding LyricFontSize}"
+                    Width="100" 
+                    VerticalAlignment="Center"/>
+            <TextBlock Text="{Binding LyricFontSize, StringFormat={}{0:F0}}" 
+                       Foreground="White" 
+                       VerticalAlignment="Center" 
+                       Margin="5,0,0,0"/>
+            </StackPanel>
+        </Border>
+        
+        <!-- 歌词显示区域 -->
         <ListBox x:Name="LyricListBox"
+                 Grid.Row="1"
                  ItemsSource="{Binding LyricLines}"
                  SelectedIndex="{Binding CurrentLineIndex}"
                  BorderThickness="0"
                  Background="Transparent"
                  Foreground="White"
-                 FontSize="20"
+                 FontSize="{Binding LyricFontSize}"
                  HorizontalContentAlignment="Center"
                  VerticalContentAlignment="Center"
-                 IsHitTestVisible="False">
+                 IsHitTestVisible="False"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
             <ListBox.ItemTemplate>
                 <DataTemplate>
-                    <TextBlock Text="{Binding Text}"
-                               TextWrapping="Wrap"
-                               TextAlignment="Center"/>
+                    <StackPanel Margin="20,10">
+                        <!-- 原文歌词 -->
+                        <TextBlock Text="{Binding Text}"
+                                   TextWrapping="Wrap"
+                                   TextAlignment="Center"
+                                   FontWeight="Normal"/>
+                        <!-- 翻译歌词 -->
+                        <TextBlock Text="{Binding Translation}"
+                                   TextWrapping="Wrap"
+                                   TextAlignment="Center"
+                                   FontSize="{Binding DataContext.TranslationFontSize, RelativeSource={RelativeSource AncestorType=Window}}"
+                                   Foreground="#AAA"
+                                   Margin="0,5,0,0">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding DataContext.ShowTranslation, RelativeSource={RelativeSource AncestorType=Window}}" Value="True"/>
+                                                <Condition Binding="{Binding HasTranslation}" Value="True"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
                 </DataTemplate>
             </ListBox.ItemTemplate>
             <ListBox.ItemContainerStyle>
                 <Style TargetType="ListBoxItem">
                     <Setter Property="Background" Value="Transparent"/>
                     <Setter Property="Foreground" Value="White"/>
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
                     <Style.Triggers>
                         <Trigger Property="IsSelected" Value="True">
                             <Setter Property="Foreground" Value="#00eaff"/>
                             <Setter Property="FontWeight" Value="Bold"/>
-                            <Setter Property="FontSize" Value="24"/>
                         </Trigger>
                     </Style.Triggers>
                 </Style>
