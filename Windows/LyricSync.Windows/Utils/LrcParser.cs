@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using LyricSync.Windows.Models;
 
@@ -62,6 +63,62 @@ namespace LyricSync.Windows.Utils
             // 排序
             result.Sort((a, b) => a.TimeSeconds.CompareTo(b.TimeSeconds));
             return result;
+        }
+
+        /// <summary>
+        /// 解析带翻译的歌词，支持原文和翻译同时显示
+        /// </summary>
+        /// <param name="originalLrc">原文歌词</param>
+        /// <param name="translationLrc">翻译歌词</param>
+        /// <returns>包含翻译的歌词行列表</returns>
+        public static List<LyricLine> ParseWithTranslation(string originalLrc, string translationLrc)
+        {
+            // 先解析原文歌词
+            var originalLines = Parse(originalLrc);
+            
+            // 如果没有翻译歌词，直接返回原文
+            if (string.IsNullOrWhiteSpace(translationLrc))
+            {
+                return originalLines;
+            }
+
+            // 解析翻译歌词
+            var translationLines = Parse(translationLrc);
+            
+            // 将翻译歌词合并到原文歌词中
+            foreach (var originalLine in originalLines)
+            {
+                // 查找匹配的翻译行（时间相近的）
+                var matchingTranslation = translationLines
+                    .Where(t => Math.Abs(t.TimeSeconds - originalLine.TimeSeconds) < 0.5) // 0.5秒误差范围
+                    .FirstOrDefault();
+
+                if (matchingTranslation != null)
+                {
+                    originalLine.Translation = matchingTranslation.Text;
+                }
+            }
+
+            return originalLines;
+        }
+
+        /// <summary>
+        /// 从网易云音乐歌词响应解析歌词
+        /// </summary>
+        /// <param name="lyricResponse">网易云音乐歌词响应</param>
+        /// <returns>歌词行列表</returns>
+        public static List<LyricLine> ParseFromNeteaseResponse(NeteaseLyricResponse lyricResponse)
+        {
+            if (lyricResponse?.Lrc?.Lyric == null)
+            {
+                return new List<LyricLine>();
+            }
+
+            // 获取原文和翻译歌词
+            string originalLrc = lyricResponse.Lrc.Lyric;
+            string translationLrc = lyricResponse.Tlyric?.Lyric;
+
+            return ParseWithTranslation(originalLrc, translationLrc);
         }
     }
 }

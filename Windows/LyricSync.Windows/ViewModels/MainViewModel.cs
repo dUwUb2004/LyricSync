@@ -530,16 +530,33 @@ namespace LyricSync.Windows.ViewModels
                     return false;
                 }
 
-                // 转换为LRC（只取原歌词，不含翻译），然后解析为行
-                var lrcContent = neteaseService.ConvertToLrcFormat(lyricResponse, false, false);
-                var parsed = LrcParser.Parse(lrcContent);
+                // 使用新的解析方法，同时解析原文和翻译
+                var parsed = LrcParser.ParseFromNeteaseResponse(lyricResponse);
                 currentLyricLines = new System.Collections.ObjectModel.ObservableCollection<LyricLine>(parsed);
                 currentLyricIndex = -1;
+
+                // 检查是否有翻译
+                bool hasTranslation = parsed.Any(line => line.HasTranslation);
+                if (hasTranslation)
+                {
+                    logger.LogMessage("✅ 检测到翻译歌词，已加载");
+                }
+                else
+                {
+                    logger.LogMessage("ℹ️ 此歌曲没有翻译歌词");
+                }
 
                 // 打开窗口
                 lyricWindow = new LyricWindow();
                 lyricWindow.SetLyrics(currentLyricLines);
                 lyricWindow.Closed += (s, e) => { lyricWindow = null; };
+                
+                // 如果有翻译，默认显示翻译
+                if (hasTranslation)
+                {
+                    lyricWindow.SetShowTranslation(true);
+                }
+                
                 lyricWindow.Show();
 
                 // 立即同步一次高亮
