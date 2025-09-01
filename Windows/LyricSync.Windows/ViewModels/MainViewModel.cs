@@ -26,7 +26,7 @@ namespace LyricSync.Windows.ViewModels
         
         private bool isListening = false;
         private MusicInfo currentMusic;
-        private string lastSearchedTitle = null; // 记录上一次搜索的歌曲名称
+        private string lastSearchedKey = null; // 记录上一次搜索使用的关键键(标题+歌手)
 
         public MainViewModel(ILogger logger, UIService uiService)
         {
@@ -97,8 +97,8 @@ namespace LyricSync.Windows.ViewModels
                 progressTimer.Stop();
                 currentMusic = null;
                 
-                // 重置上一次搜索的标题
-                lastSearchedTitle = null;
+                // 重置上一次搜索的键
+                lastSearchedKey = null;
                 logger.LogMessage("🔄 已重置搜索状态");
             }
             catch (Exception ex)
@@ -272,11 +272,11 @@ namespace LyricSync.Windows.ViewModels
                     // 通知UI更新
                     OnMusicInfoUpdated?.Invoke(currentMusic);
                     
-                    // 检查歌曲名称是否发生变化，只有变化时才搜索
-                    if (HasTitleChanged(musicInfo.Title))
+                    // 检查是否需要重新搜索（标题或歌手变更，或未曾搜索）
+                    if (HasTrackChanged(musicInfo))
                     {
-                        lastSearchedTitle = musicInfo.Title;
-                        logger.LogMessage($"🔄 歌曲名称发生变化，开始搜索: '{musicInfo.Title}'");
+                        lastSearchedKey = BuildTrackKey(musicInfo);
+                        logger.LogMessage($"🔄 轨道信息变化，开始搜索: '{lastSearchedKey}'");
                         
                         // 检查网易云API连接
                         _ = Task.Run(async () => 
@@ -304,8 +304,8 @@ namespace LyricSync.Windows.ViewModels
                     }
                     else
                     {
-                        logger.LogMessage($"⏭️ 歌曲名称未变化，跳过搜索: '{musicInfo.Title}'");
-                        logger.LogMessage($"💡 上次搜索标题: '{lastSearchedTitle ?? "无"}'");
+                        logger.LogMessage($"⏭️ 曲目信息未变化，跳过搜索: '{BuildTrackKey(musicInfo)}'");
+                        logger.LogMessage($"💡 上次搜索键: '{lastSearchedKey ?? "无"}'");
                     }
                 }
                 else
@@ -344,6 +344,13 @@ namespace LyricSync.Windows.ViewModels
                     SaveMatchedSongInfo(matchedSong);
                     
                     logger.LogMessage($"✅ 匹配歌曲信息已保存: {matchedSong.Name} (ID: {matchedSong.Id})");
+
+                    // 如果歌词窗口已经打开，则在切歌后刷新为当前歌曲的歌词
+                    if (lyricWindow != null)
+                    {
+                        logger.LogMessage("🔄 检测到切歌，正在刷新歌词窗口为当前歌曲...");
+                        await RefreshLyricsForCurrentSongAsync();
+                    }
                 }
                 else
                 {
@@ -362,41 +369,40 @@ namespace LyricSync.Windows.ViewModels
             }
         }
 
-        private bool HasTitleChanged(string newTitle)
+        private string BuildTrackKey(MusicInfo info)
         {
-            if (string.IsNullOrEmpty(newTitle))
+            if (info == null)
             {
-                return false;
+                return null;
             }
-            
-            // 清理新标题（移除英文翻译部分）
-            string cleanNewTitle = newTitle;
-            int englishStart = cleanNewTitle.IndexOf('(');
+            // 清理标题（移除括号内翻译等）
+            string title = info.Title ?? string.Empty;
+            int englishStart = title.IndexOf('(');
             if (englishStart > 0)
             {
-                cleanNewTitle = cleanNewTitle.Substring(0, englishStart).Trim();
+                title = title.Substring(0, englishStart).Trim();
             }
-            
-            // 清理上一次搜索的标题
-            string cleanLastTitle = lastSearchedTitle;
-            if (!string.IsNullOrEmpty(cleanLastTitle))
+            string artist = info.Artist ?? string.Empty;
+            return $"{title.Trim()} - {artist.Trim()}";
+        }
+
+        private bool HasTrackChanged(MusicInfo newInfo)
+        {
+            // 构造当前键
+            string newKey = BuildTrackKey(newInfo);
+            // 尚未搜索过则需要搜索
+            if (string.IsNullOrEmpty(lastSearchedKey))
             {
-                int lastEnglishStart = cleanLastTitle.IndexOf('(');
-                if (lastEnglishStart > 0)
-                {
-                    cleanLastTitle = cleanLastTitle.Substring(0, lastEnglishStart).Trim();
-                }
+                logger.LogMessage($"🔎 尚未有上次搜索键，准备以 '{newKey}' 执行首次搜索");
+                return true;
             }
-            
-            // 比较清理后的标题
-            bool hasChanged = !string.Equals(cleanNewTitle, cleanLastTitle, StringComparison.OrdinalIgnoreCase);
-            
-            if (hasChanged)
+            // 比较键是否变化
+            bool changed = !string.Equals(newKey, lastSearchedKey, StringComparison.OrdinalIgnoreCase);
+            if (changed)
             {
-                logger.LogMessage($"🔄 标题变化检测: '{cleanLastTitle ?? "无"}' -> '{cleanNewTitle}'");
+                logger.LogMessage($"🔄 曲目信息变化: '{lastSearchedKey}' -> '{newKey}'");
             }
-            
-            return hasChanged;
+            return changed;
         }
 
         private void SaveMatchedSongInfo(NeteaseSong matchedSong)
@@ -473,7 +479,7 @@ namespace LyricSync.Windows.ViewModels
                 logger.LogMessage("🧪 测试模式：清除旧匹配信息");
                 
                 // 强制更新搜索状态
-                lastSearchedTitle = null;
+                lastSearchedKey = null;
                 
                 // 执行搜索
                 await SearchNeteaseMusic(testMusicInfo);
@@ -569,6 +575,57 @@ namespace LyricSync.Windows.ViewModels
             {
                 logger.LogMessage($"❌ 打开歌词窗口失败: {ex.Message}");
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// 刷新歌词窗口为当前匹配歌曲的歌词（含翻译）
+        /// </summary>
+        private async Task RefreshLyricsForCurrentSongAsync()
+        {
+            try
+            {
+                if (!HasMatchedSongInfo())
+                {
+                    return;
+                }
+
+                var lyricResponse = await neteaseService.GetLyricAsync(currentMusic.MatchedSong.Id);
+                if (lyricResponse == null || string.IsNullOrEmpty(lyricResponse.Lrc?.Lyric))
+                {
+                    logger.LogMessage("⚠️ 当前歌曲未获取到可用歌词");
+                    return;
+                }
+
+                // 解析原文+翻译
+                var parsed = LrcParser.ParseFromNeteaseResponse(lyricResponse);
+                currentLyricLines = new ObservableCollection<LyricLine>(parsed);
+                currentLyricIndex = -1;
+
+                if (lyricWindow != null)
+                {
+                    // 确保在UI线程刷新UI
+                    await lyricWindow.Dispatcher.InvokeAsync(() =>
+                    {
+                        lyricWindow.SetLyrics(currentLyricLines);
+
+                        // 如果有翻译，默认显示翻译
+                        bool hasTranslation = parsed.Any(line => line.HasTranslation);
+                        if (hasTranslation)
+                        {
+                            lyricWindow.SetShowTranslation(true);
+                        }
+
+                        // 同步高亮
+                        SyncLyricHighlight();
+                    });
+                }
+
+                logger.LogMessage("✅ 歌词已刷新为当前歌曲");
+            }
+            catch (Exception ex)
+            {
+                logger.LogMessage($"❌ 刷新当前歌曲歌词失败: {ex.Message}");
             }
         }
 
