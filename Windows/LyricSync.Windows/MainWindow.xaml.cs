@@ -74,6 +74,8 @@ namespace LyricSync.Windows
                 if (initialized)
                 {
                     logger.LogMessage("✅ 系统初始化完成");
+                    // 设置播放按钮的初始状态（暂停状态）
+                    UpdatePlayPauseButtonIcon(false);
                 }
                 else
                 {
@@ -421,7 +423,9 @@ namespace LyricSync.Windows
         {
             if (musicInfo != null)
             {
+                logger.LogMessage($"🔄 更新播放按钮图标: IsPlaying={musicInfo.IsPlaying}");
                 uiService.UpdateMusicDisplay(musicInfo);
+                UpdatePlayPauseButtonIcon(musicInfo.IsPlaying);
             }
         }
 
@@ -480,6 +484,64 @@ namespace LyricSync.Windows
                 }
             }
             return null;
+        }
+
+        /// <summary>
+        /// 更新播放/暂停按钮的图标
+        /// </summary>
+        private void UpdatePlayPauseButtonIcon(bool isPlaying)
+        {
+            try
+            {
+                logger?.LogMessage($"🎯 开始更新播放按钮图标: isPlaying={isPlaying}");
+                
+                // 确保在UI线程中执行
+                if (PlayPauseButton.Dispatcher.CheckAccess())
+                {
+                    // 当前在UI线程，直接更新
+                    logger?.LogMessage($"✅ 在UI线程中更新播放按钮图标");
+                    UpdatePlayPauseButtonIconInternal(isPlaying);
+                }
+                else
+                {
+                    // 不在UI线程，使用Dispatcher.Invoke
+                    logger?.LogMessage($"🔄 切换到UI线程更新播放按钮图标");
+                    PlayPauseButton.Dispatcher.Invoke(() => UpdatePlayPauseButtonIconInternal(isPlaying));
+                }
+                
+                logger?.LogMessage($"✅ 播放按钮图标更新完成");
+            }
+            catch (Exception ex)
+            {
+                logger?.LogMessage($"⚠️ 更新播放按钮图标失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 内部方法：实际更新播放按钮图标
+        /// </summary>
+        private void UpdatePlayPauseButtonIconInternal(bool isPlaying)
+        {
+            try
+            {
+                logger?.LogMessage($"🔧 内部方法更新播放按钮图标: isPlaying={isPlaying}");
+                
+                if (PlayPauseButton.Content is MahApps.Metro.IconPacks.PackIconMaterial icon)
+                {
+                    var newKind = isPlaying ? MahApps.Metro.IconPacks.PackIconMaterialKind.Pause : MahApps.Metro.IconPacks.PackIconMaterialKind.Play;
+                    logger?.LogMessage($"🎨 设置图标类型: {newKind}");
+                    icon.Kind = newKind;
+                    logger?.LogMessage($"✅ 图标类型设置成功");
+                }
+                else
+                {
+                    logger?.LogMessage($"⚠️ 播放按钮内容不是PackIconMaterial类型: {PlayPauseButton.Content?.GetType()}");
+                }
+            }
+            catch (Exception ex)
+            {
+                logger?.LogMessage($"⚠️ 更新播放按钮图标内部方法失败: {ex.Message}");
+            }
         }
 
         protected override void OnClosed(EventArgs e)
