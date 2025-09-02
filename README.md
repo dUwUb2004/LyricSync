@@ -10,11 +10,11 @@ LyricSync 是一个开源的跨设备音乐交互项目，旨在为用户提供�
 
 ## 截图
 
-<img src="docs/img/1.jpg" width="1280px">
+<img src="docs/img/1.png" width="1280px">
 
-<img src="docs/img/2.jpg" width="1280px">
+<img src="docs/img/2.png" width="1280px">
 
-<img src="docs/img/3.jpg" width="1280px">
+<img src="docs/img/3.png" width="1280px">
 
 ## 项目结构
 
