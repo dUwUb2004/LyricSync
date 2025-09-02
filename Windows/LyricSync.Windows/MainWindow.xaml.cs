@@ -56,6 +56,9 @@ namespace LyricSync.Windows
             // 订阅音乐信息更新事件
             viewModel.OnMusicInfoUpdated += OnMusicInfoUpdated;
             
+            // 订阅桌面歌词窗口状态变化事件
+            viewModel.OnDesktopLyricWindowStateChanged += OnDesktopLyricWindowStateChanged;
+            
             // 设置初始连接状态
             uiService.UpdateConnectionStatus(false);
             
@@ -240,27 +243,43 @@ namespace LyricSync.Windows
             try
             {
                 ShowDesktopLyricButton.IsEnabled = false;
-                UpdateButtonText(ShowDesktopLyricButton, "打开中...");
-
-                bool ok = await viewModel.OpenDesktopLyricWindowAsync();
-                if (ok)
+                
+                // 检查桌面歌词窗口是否已经打开
+                var desktopWindow = viewModel.GetDesktopLyricWindow();
+                if (desktopWindow != null)
                 {
-                    // 桌面歌词窗口打开成功，应用当前设置
-                    ApplyDesktopSettings();
+                    // 如果已经打开，则关闭它
+                    UpdateButtonText(ShowDesktopLyricButton, "关闭中...");
+                    desktopWindow.Close();
+                    logger.LogMessage("✅ 桌面歌词窗口已关闭");
                 }
                 else
                 {
-                    logger.LogMessage("❌ 打开桌面歌词窗口失败");
+                    // 如果未打开，则打开它
+                    UpdateButtonText(ShowDesktopLyricButton, "打开中...");
+                    bool ok = await viewModel.OpenDesktopLyricWindowAsync();
+                    if (ok)
+                    {
+                        // 桌面歌词窗口打开成功，应用当前设置
+                        ApplyDesktopSettings();
+                        logger.LogMessage("✅ 桌面歌词窗口已打开");
+                    }
+                    else
+                    {
+                        logger.LogMessage("❌ 打开桌面歌词窗口失败");
+                    }
                 }
             }
             catch (Exception ex)
             {
-                logger.LogMessage($"❌ 打开桌面歌词窗口时发生异常: {ex.Message}");
+                logger.LogMessage($"❌ 操作桌面歌词窗口时发生异常: {ex.Message}");
             }
             finally
             {
                 ShowDesktopLyricButton.IsEnabled = true;
-                UpdateButtonText(ShowDesktopLyricButton, "桌面歌词");
+                // 根据窗口状态更新按钮文本
+                var desktopWindow = viewModel.GetDesktopLyricWindow();
+                UpdateButtonText(ShowDesktopLyricButton, desktopWindow != null ? "关闭桌面歌词" : "桌面歌词");
             }
         }
 
@@ -406,6 +425,13 @@ namespace LyricSync.Windows
             }
         }
 
+        private void OnDesktopLyricWindowStateChanged(bool isOpen)
+        {
+            // 当桌面歌词窗口状态变化时，更新按钮文本
+            var desktopWindow = viewModel.GetDesktopLyricWindow();
+            UpdateButtonText(ShowDesktopLyricButton, desktopWindow != null ? "关闭桌面歌词" : "桌面歌词");
+        }
+
         /// <summary>
         /// 更新按钮文本，保持图标不变
         /// </summary>
@@ -464,6 +490,7 @@ namespace LyricSync.Windows
                 if (viewModel != null)
                 {
                     viewModel.OnMusicInfoUpdated -= OnMusicInfoUpdated;
+                    viewModel.OnDesktopLyricWindowStateChanged -= OnDesktopLyricWindowStateChanged;
                 }
                 
                 progressTimer?.Stop();

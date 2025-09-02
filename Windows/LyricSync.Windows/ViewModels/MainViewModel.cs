@@ -85,6 +85,7 @@ namespace LyricSync.Windows.ViewModels
         }
 
         public event Action<MusicInfo> OnMusicInfoUpdated;
+        public event Action<bool> OnDesktopLyricWindowStateChanged; // 桌面歌词窗口状态变化事件
 
         public void StopListening()
         {
@@ -624,7 +625,10 @@ namespace LyricSync.Windows.ViewModels
                 desktopLyricWindow = new DesktopLyricWindow();
                 desktopLyricWindow.SetLyrics(currentLyricLines);
                 desktopLyricWindow.SendControlAsync = async (key) => await SendControlCommandAsync(key);
-                desktopLyricWindow.Closed += (s, e) => { desktopLyricWindow = null; };
+                desktopLyricWindow.Closed += (s, e) => { 
+                    desktopLyricWindow = null; 
+                    OnDesktopLyricWindowStateChanged?.Invoke(false); // 通知窗口已关闭
+                };
                 desktopLyricWindow.Show();
 
                 SyncLyricHighlight();
