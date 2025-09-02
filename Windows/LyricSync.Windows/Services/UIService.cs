@@ -33,7 +33,7 @@ namespace LyricSync.Windows.Services
         private readonly TextBox jsonDisplayTextBox;
         private readonly Expander matchedSongExpander;
         private readonly Image albumCoverImage;
-        private readonly TextBlock defaultMusicIcon;
+        private readonly MahApps.Metro.IconPacks.PackIconMaterial defaultMusicIcon;
 
         public UIService(
             ILogger logger,
@@ -54,7 +54,7 @@ namespace LyricSync.Windows.Services
             TextBox jsonDisplayTextBox,
             Expander matchedSongExpander,
             Image albumCoverImage,
-            TextBlock defaultMusicIcon)
+            MahApps.Metro.IconPacks.PackIconMaterial defaultMusicIcon)
         {
             this.logger = logger;
             this.songTitle = songTitle;

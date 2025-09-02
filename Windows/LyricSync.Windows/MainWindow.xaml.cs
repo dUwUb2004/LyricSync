@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Threading;
 using Newtonsoft.Json;
 using LyricSync.Windows.Services;
@@ -125,7 +126,7 @@ namespace LyricSync.Windows
                 // 使用Dispatcher确保UI更新在主线程执行
                 Dispatcher.Invoke(() =>
                 {
-                    ConnectButton.Content = "停止监听";
+                    UpdateButtonText(ConnectButton, "停止监听");
                 });
                 
                 uiService.UpdateBottomStatus("正在监听安卓端日志，请确保安卓端已启动并播放音乐");
@@ -149,7 +150,7 @@ namespace LyricSync.Windows
                 // 使用Dispatcher确保UI更新在主线程执行
                 Dispatcher.Invoke(() =>
                 {
-                    ConnectButton.Content = "开始监听";
+                    UpdateButtonText(ConnectButton, "开始监听");
                 });
                 
                 uiService.UpdateBottomStatus("准备就绪");
@@ -216,7 +217,7 @@ namespace LyricSync.Windows
             try
             {
                 ShowLyricButton.IsEnabled = false;
-                ShowLyricButton.Content = "⏳ 打开中...";
+                UpdateButtonText(ShowLyricButton, "打开中...");
                 bool ok = await viewModel.OpenLyricWindowAsync();
                 if (!ok)
                 {
@@ -230,7 +231,7 @@ namespace LyricSync.Windows
             finally
             {
                 ShowLyricButton.IsEnabled = true;
-                ShowLyricButton.Content = "🪄 显示歌词";
+                UpdateButtonText(ShowLyricButton, "显示歌词");
             }
         }
 
@@ -239,7 +240,7 @@ namespace LyricSync.Windows
             try
             {
                 ShowDesktopLyricButton.IsEnabled = false;
-                ShowDesktopLyricButton.Content = "⏳ 打开中...";
+                UpdateButtonText(ShowDesktopLyricButton, "打开中...");
 
                 bool ok = await viewModel.OpenDesktopLyricWindowAsync();
                 if (ok)
@@ -259,7 +260,7 @@ namespace LyricSync.Windows
             finally
             {
                 ShowDesktopLyricButton.IsEnabled = true;
-                ShowDesktopLyricButton.Content = "🪟 桌面歌词";
+                UpdateButtonText(ShowDesktopLyricButton, "桌面歌词");
             }
         }
 
@@ -341,7 +342,7 @@ namespace LyricSync.Windows
             try
             {
                 TestApiButton.IsEnabled = false;
-                TestApiButton.Content = "测试中...";
+                UpdateButtonText(TestApiButton, "测试中...");
                 
                 logger.LogMessage("🔍 开始测试网易云API连接...");
                 
@@ -359,7 +360,7 @@ namespace LyricSync.Windows
             finally
             {
                 TestApiButton.IsEnabled = true;
-                TestApiButton.Content = "测试API连接";
+                UpdateButtonText(TestApiButton, "测试API连接");
             }
         }
 
@@ -369,7 +370,7 @@ namespace LyricSync.Windows
             {
                 // 禁用按钮防止重复点击
                 ExportLrcButton.IsEnabled = false;
-                ExportLrcButton.Content = "⏳ 导出中...";
+                UpdateButtonText(ExportLrcButton, "导出中...");
                 
                 logger.LogMessage("🎵 用户点击导出LRC歌词按钮");
                 
@@ -393,7 +394,7 @@ namespace LyricSync.Windows
             {
                 // 恢复按钮状态
                 ExportLrcButton.IsEnabled = true;
-                ExportLrcButton.Content = "📄 导出LRC歌词";
+                UpdateButtonText(ExportLrcButton, "导出LRC歌词");
             }
         }
 
@@ -403,6 +404,56 @@ namespace LyricSync.Windows
             {
                 uiService.UpdateMusicDisplay(musicInfo);
             }
+        }
+
+        /// <summary>
+        /// 更新按钮文本，保持图标不变
+        /// </summary>
+        private void UpdateButtonText(Button button, string newText)
+        {
+            try
+            {
+                if (button.Content is StackPanel stackPanel)
+                {
+                    // 查找 StackPanel 中的 TextBlock
+                    var textBlock = FindTextBlockInStackPanel(stackPanel);
+                    if (textBlock != null)
+                    {
+                        textBlock.Text = newText;
+                    }
+                    else
+                    {
+                        // 如果找不到 TextBlock，直接设置 Content
+                        button.Content = newText;
+                    }
+                }
+                else
+                {
+                    // 如果 Content 不是 StackPanel，直接设置
+                    button.Content = newText;
+                }
+            }
+            catch (Exception ex)
+            {
+                // 如果更新失败，直接设置 Content
+                button.Content = newText;
+                logger?.LogMessage($"⚠️ 更新按钮文本失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 在 StackPanel 中查找 TextBlock
+        /// </summary>
+        private TextBlock FindTextBlockInStackPanel(StackPanel stackPanel)
+        {
+            foreach (var child in stackPanel.Children)
+            {
+                if (child is TextBlock textBlock)
+                {
+                    return textBlock;
+                }
+            }
+            return null;
         }
 
         protected override void OnClosed(EventArgs e)

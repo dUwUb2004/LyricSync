@@ -1,6 +1,7 @@
 <Window x:Class="LyricSync.Windows.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         Title="LyricSync - 音乐同步" Height="600" Width="800"
         WindowStartupLocation="CenterScreen"
         Background="#F5F5F5">
@@ -62,7 +63,7 @@
         <!-- 标题栏 -->
         <Border Grid.Row="0" Background="#303f9f" Padding="20,15">
             <StackPanel Orientation="Horizontal">
-                <TextBlock Text="🎵" FontSize="24" VerticalAlignment="Center" Margin="0,0,15,0"/>
+                <iconPacks:PackIconMaterial Kind="Music" Width="24" Height="24" VerticalAlignment="Center" Margin="0,0,15,0" Foreground="White"/>
                 <TextBlock Text="LyricSync" FontSize="24" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
                 <TextBlock Text="音乐同步" FontSize="16" Foreground="#E0E0E0" VerticalAlignment="Center" Margin="10,0,0,0"/>
             </StackPanel>
@@ -105,7 +106,7 @@
                         <!-- 专辑封面占位符 -->
                         <Border Width="120" Height="120" Background="#F0F0F0" CornerRadius="8" 
                                 HorizontalAlignment="Center" Margin="0,0,0,20">
-                            <TextBlock Text="🎵" FontSize="48" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <iconPacks:PackIconMaterial Kind="Music" Width="48" Height="48" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#999"/>
                         </Border>
                         
                         <!-- 音乐信息 -->
@@ -132,39 +133,70 @@
                         
                         <!-- 播放控制按钮 -->
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                            <Button x:Name="PreviousButton" Content="⏮" Style="{StaticResource ControlButtonStyle}" 
-                                    Click="PreviousButton_Click"/>
-                            <Button x:Name="PlayPauseButton" Content="⏸" Style="{StaticResource ControlButtonStyle}" 
-                                    Click="PlayPauseButton_Click"/>
-                            <Button x:Name="NextButton" Content="⏭" Style="{StaticResource ControlButtonStyle}" 
-                                    Click="NextButton_Click"/>
+                            <Button x:Name="PreviousButton" Style="{StaticResource ControlButtonStyle}" 
+                                    Click="PreviousButton_Click">
+                                <iconPacks:PackIconMaterial Kind="SkipPrevious" Width="20" Height="20" Foreground="White"/>
+                            </Button>
+                            <Button x:Name="PlayPauseButton" Style="{StaticResource ControlButtonStyle}" 
+                                    Click="PlayPauseButton_Click">
+                                <iconPacks:PackIconMaterial Kind="Pause" Width="20" Height="20" Foreground="White"/>
+                            </Button>
+                            <Button x:Name="NextButton" Style="{StaticResource ControlButtonStyle}" 
+                                    Click="NextButton_Click">
+                                <iconPacks:PackIconMaterial Kind="SkipNext" Width="20" Height="20" Foreground="White"/>
+                            </Button>
                         </StackPanel>
                         
                         <!-- 控制按钮 -->
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,15,0,0">
-                            <Button x:Name="TestSearchButton" Content="🧪 测试搜索" 
-                                    Style="{StaticResource ControlButtonStyle}"
-                                    Click="TestSearchButton_Click"/>
-                            <Button x:Name="ExportLrcButton" Content="📄 导出LRC歌词" 
-                                    Style="{StaticResource ControlButtonStyle}"
-                                    Click="ExportLrcButton_Click"/>
-                            <Button x:Name="ShowLyricButton" Content="🪄 显示歌词" 
-                                    Style="{StaticResource ControlButtonStyle}"
-                                    Click="ShowLyricButton_Click"/>
-                                                            <Button x:Name="ShowDesktopLyricButton" Content="🪟 桌面歌词" 
-                                    Style="{StaticResource ControlButtonStyle}"
-                                    Click="ShowDesktopLyricButton_Click"/>
+                            <Button x:Name="TestSearchButton" Style="{StaticResource ControlButtonStyle}"
+                                    Click="TestSearchButton_Click">
+                                <StackPanel Orientation="Horizontal">
+                                    <iconPacks:PackIconMaterial Kind="TestTube" Width="16" Height="16" Foreground="White" Margin="0,0,5,0"/>
+                                    <TextBlock Text="测试搜索" Foreground="White"/>
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="ExportLrcButton" Style="{StaticResource ControlButtonStyle}"
+                                    Click="ExportLrcButton_Click">
+                                <StackPanel Orientation="Horizontal">
+                                    <iconPacks:PackIconMaterial Kind="FileDocument" Width="16" Height="16" Foreground="White" Margin="0,0,5,0"/>
+                                    <TextBlock Text="导出LRC歌词" Foreground="White"/>
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="ShowLyricButton" Style="{StaticResource ControlButtonStyle}"
+                                    Click="ShowLyricButton_Click">
+                                <StackPanel Orientation="Horizontal">
+                                    <iconPacks:PackIconMaterial Kind="AutoFix" Width="16" Height="16" Foreground="White" Margin="0,0,5,0"/>
+                                    <TextBlock Text="显示歌词" Foreground="White"/>
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="ShowDesktopLyricButton" Style="{StaticResource ControlButtonStyle}"
+                                    Click="ShowDesktopLyricButton_Click">
+                                <StackPanel Orientation="Horizontal">
+                                    <iconPacks:PackIconMaterial Kind="WindowOpen" Width="16" Height="16" Foreground="White" Margin="0,0,5,0"/>
+                                    <TextBlock Text="桌面歌词" Foreground="White"/>
+                                </StackPanel>
+                            </Button>
                                 
-                                <Button x:Name="SettingsButton" Content="⚙️ 设置" 
-                                    Style="{StaticResource ControlButtonStyle}"
-                                    Click="SettingsButton_Click"/>
+                            <Button x:Name="SettingsButton" Style="{StaticResource ControlButtonStyle}"
+                                    Click="SettingsButton_Click">
+                                <StackPanel Orientation="Horizontal">
+                                    <iconPacks:PackIconMaterial Kind="Cog" Width="16" Height="16" Foreground="White" Margin="0,0,5,0"/>
+                                    <TextBlock Text="设置" Foreground="White"/>
+                                </StackPanel>
+                            </Button>
 
                         </StackPanel>
                         
 
                         <!-- 匹配歌曲信息 -->
-                        <Expander x:Name="MatchedSongExpander" Header="🎯 网易云匹配信息" 
-                                  Margin="0,20,0,0" IsExpanded="False">
+                        <Expander x:Name="MatchedSongExpander" Margin="0,20,0,0" IsExpanded="False">
+                            <Expander.Header>
+                                <StackPanel Orientation="Horizontal">
+                                    <iconPacks:PackIconMaterial Kind="Target" Width="16" Height="16" Foreground="#303f9f" Margin="0,0,5,0"/>
+                                    <TextBlock Text="网易云匹配信息" Foreground="#303f9f"/>
+                                </StackPanel>
+                            </Expander.Header>
                             <StackPanel x:Name="MatchedSongPanel" Margin="0,10,0,0">
                                 <!-- 封面和歌曲信息布局 -->
                                 <Grid Margin="0,0,0,10">
@@ -181,7 +213,7 @@
                                             <Image x:Name="AlbumCoverImage" Stretch="UniformToFill" 
                                                    RenderOptions.BitmapScalingMode="HighQuality"/>
                                             <!-- 默认音符图标 -->
-                                            <TextBlock x:Name="DefaultMusicIcon" Text="🎵" FontSize="32" 
+                                            <iconPacks:PackIconMaterial x:Name="DefaultMusicIcon" Kind="Music" Width="32" Height="32" 
                                                        HorizontalAlignment="Center" VerticalAlignment="Center" 
                                                        Foreground="#999"/>
                                         </Grid>
@@ -203,7 +235,13 @@
                                 </Grid>
                                 
                                 <!-- JSON信息显示 -->
-                                <Expander Header="📄 完整JSON数据" Margin="0,10,0,0" IsExpanded="False">
+                                <Expander Margin="0,10,0,0" IsExpanded="False">
+                                    <Expander.Header>
+                                        <StackPanel Orientation="Horizontal">
+                                            <iconPacks:PackIconMaterial Kind="FileDocument" Width="16" Height="16" Foreground="#303f9f" Margin="0,0,5,0"/>
+                                            <TextBlock Text="完整JSON数据" Foreground="#303f9f"/>
+                                        </StackPanel>
+                                    </Expander.Header>
                                     <ScrollViewer Height="200" VerticalScrollBarVisibility="Auto">
                                         <TextBox x:Name="JsonDisplayTextBox" IsReadOnly="True" 
                                                  Background="#F8F8F8" BorderThickness="0" 
@@ -228,12 +266,20 @@
                             <TextBlock Grid.Column="0" Text="连接日志" FontSize="18" FontWeight="Bold" Margin="0,0,0,15"/>
                             
                             <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,15">
-                                <Button x:Name="ClearLogButton" Content="🧹 清理日志" 
-                                        Style="{StaticResource ControlButtonStyle}" Margin="0,0,5,0"
-                                        Click="ClearLogButton_Click"/>
-                                <Button x:Name="LogInfoButton" Content="📊 日志信息" 
-                                        Style="{StaticResource ControlButtonStyle}"
-                                        Click="LogInfoButton_Click"/>
+                                <Button x:Name="ClearLogButton" Style="{StaticResource ControlButtonStyle}" Margin="0,0,5,0"
+                                        Click="ClearLogButton_Click">
+                                    <StackPanel Orientation="Horizontal">
+                                        <iconPacks:PackIconMaterial Kind="Broom" Width="16" Height="16" Foreground="White" Margin="0,0,5,0"/>
+                                        <TextBlock Text="清理日志" Foreground="White"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button x:Name="LogInfoButton" Style="{StaticResource ControlButtonStyle}"
+                                        Click="LogInfoButton_Click">
+                                    <StackPanel Orientation="Horizontal">
+                                        <iconPacks:PackIconMaterial Kind="ChartLine" Width="16" Height="16" Foreground="White" Margin="0,0,5,0"/>
+                                        <TextBlock Text="日志信息" Foreground="White"/>
+                                    </StackPanel>
+                                </Button>
                             </StackPanel>
                         </Grid>
                         
@@ -256,11 +302,15 @@
                     <StackPanel>
                         <!-- 返回按钮 -->
                         <Button x:Name="BackToMainButton" 
-                                Content="← 返回主页" 
                                 HorizontalAlignment="Left"
                                 Margin="0,0,0,20"
                                 Style="{StaticResource ControlButtonStyle}"
-                                Click="BackToMainButton_Click"/>
+                                Click="BackToMainButton_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <iconPacks:PackIconMaterial Kind="ArrowLeft" Width="16" Height="16" Foreground="White" Margin="0,0,5,0"/>
+                                <TextBlock Text="返回主页" Foreground="White"/>
+                            </StackPanel>
+                        </Button>
                         <!-- 桌面歌词设置 -->
                         <Border Style="{StaticResource CardStyle}">
                             <StackPanel>

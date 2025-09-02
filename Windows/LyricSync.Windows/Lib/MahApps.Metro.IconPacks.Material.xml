@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>MahApps.Metro.IconPacks.Material</name>
+    </assembly>
+    <members>
+        <member name="T:MahApps.Metro.IconPacks.PackIconMaterial">
+            <summary>
+            All icons sourced from Material Design Icons Font <see><cref>https://pictogrammers.com/library/mdi/</cref></see>
+            In accordance of <see><cref>https://github.com/Templarian/MaterialDesign?tab=License-1-ov-file#readme</cref></see>.
+            </summary>
+        </member>
+        <member name="P:MahApps.Metro.IconPacks.PackIconMaterial.Kind">
+            <summary>
+            Gets or sets the icon to display.
+            </summary>
+        </member>
+        <member name="P:MahApps.Metro.IconPacks.MaterialCursorExtension.HotSpot">
+            <inheritdoc/>
+        </member>
+        <member name="P:MahApps.Metro.IconPacks.MaterialCursorExtension.Width">
+            <inheritdoc/>
+        </member>
+        <member name="P:MahApps.Metro.IconPacks.MaterialCursorExtension.Height">
+            <inheritdoc/>
+        </member>
+        <member name="P:MahApps.Metro.IconPacks.MaterialCursorExtension.StrokeBrush">
+            <inheritdoc/>
+        </member>
+        <member name="P:MahApps.Metro.IconPacks.MaterialCursorExtension.StrokeThickness">
+            <inheritdoc/>
+        </member>
+        <member name="M:MahApps.Metro.IconPacks.MaterialImageExtension.GetPathData(System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="T:MahApps.Metro.IconPacks.PackIconMaterialKind">
+            ******************************************
+            This code is auto generated. Do not amend.
+            ******************************************
+            <summary>
+            List of available icons for use with <see cref="T:MahApps.Metro.IconPacks.PackIconMaterial" />.
+            </summary>
+            <remarks>
+            All icons sourced from Material Design Icons Font <see><cref>https://pictogrammers.com/library/mdi/</cref></see>
+            In accordance of <see><cref>https://github.com/Templarian/MaterialDesign?tab=License-1-ov-file#readme</cref></see>.
+            </remarks>
+        </member>
+        <member name="M:MahApps.Metro.IconPacks.Converter.PackIconMaterialKindToImageConverter.GetPathData(System.Object)">
+            <inheritdoc />
+        </member>
+    </members>
+</doc>

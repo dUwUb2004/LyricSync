@@ -51,7 +51,7 @@ desktop.ini
 
 # 可执行文件和第三方库
 Windows/LyricSync.Windows/Tools/
-Windows/LyricSync.Windows/Lib/
+# Windows/LyricSync.Windows/Lib/ - 注释掉，允许跟踪 Lib 文件夹中的 DLL 文件
 
 # 临时目录
 temp/
