@@ -395,6 +395,111 @@
                             </StackPanel>
                         </Border>
                         
+                        <!-- 桌面歌词样式设置 -->
+                        <Border Style="{StaticResource CardStyle}">
+                            <StackPanel>
+                                <TextBlock Text="桌面歌词样式设置" FontSize="18" FontWeight="Bold" Margin="0,0,0,15"/>
+                                
+                                <!-- 主歌词样式 -->
+                                <GroupBox Header="主歌词样式" Margin="0,0,0,15">
+                                    <StackPanel Margin="10">
+                                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                                            <TextBlock Text="字体:" Width="80" VerticalAlignment="Center"/>
+                                            <ComboBox x:Name="MainLyricFontComboBox" Width="150" SelectedItem="{Binding MainLyricFontFamily}">
+                                                <ComboBoxItem Content="Microsoft YaHei UI"/>
+                                                <ComboBoxItem Content="Microsoft YaHei"/>
+                                                <ComboBoxItem Content="SimHei"/>
+                                                <ComboBoxItem Content="SimSun"/>
+                                                <ComboBoxItem Content="Arial"/>
+                                                <ComboBoxItem Content="Times New Roman"/>
+                                            </ComboBox>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                                            <TextBlock Text="大小:" Width="80" VerticalAlignment="Center"/>
+                                            <Slider x:Name="MainLyricSizeSlider" Width="150" Minimum="12" Maximum="48" 
+                                                    Value="{Binding MainLyricFontSize}" TickFrequency="2" IsSnapToTickEnabled="True"/>
+                                            <TextBlock x:Name="MainLyricSizeText" Text="{Binding MainLyricFontSize, StringFormat={}{0:F0}}" 
+                                                       Width="30" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                                            <TextBlock Text="颜色:" Width="80" VerticalAlignment="Center"/>
+                                            <Button x:Name="MainLyricColorButton" Width="80" Height="25" 
+                                                    Background="{Binding MainLyricColor}" Click="MainLyricColorButton_Click"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                                            <TextBlock Text="描边色:" Width="80" VerticalAlignment="Center"/>
+                                            <Button x:Name="MainLyricStrokeColorButton" Width="80" Height="25" 
+                                                    Background="{Binding MainLyricStrokeColor}" Click="MainLyricStrokeColorButton_Click"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </GroupBox>
+
+                                <!-- 翻译歌词样式 -->
+                                <GroupBox Header="翻译歌词样式" Margin="0,0,0,15">
+                                    <StackPanel Margin="10">
+                                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                                            <TextBlock Text="字体:" Width="80" VerticalAlignment="Center"/>
+                                            <ComboBox x:Name="TranslationFontComboBox" Width="150" SelectedItem="{Binding TranslationFontFamily}">
+                                                <ComboBoxItem Content="Microsoft YaHei UI"/>
+                                                <ComboBoxItem Content="Microsoft YaHei"/>
+                                                <ComboBoxItem Content="SimHei"/>
+                                                <ComboBoxItem Content="SimSun"/>
+                                                <ComboBoxItem Content="Arial"/>
+                                                <ComboBoxItem Content="Times New Roman"/>
+                                            </ComboBox>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                                            <TextBlock Text="大小:" Width="80" VerticalAlignment="Center"/>
+                                            <Slider x:Name="TranslationSizeSlider" Width="150" Minimum="10" Maximum="32" 
+                                                    Value="{Binding TranslationFontSize}" TickFrequency="2" IsSnapToTickEnabled="True"/>
+                                            <TextBlock x:Name="TranslationSizeText" Text="{Binding TranslationFontSize, StringFormat={}{0:F0}}" 
+                                                       Width="30" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                                            <TextBlock Text="颜色:" Width="80" VerticalAlignment="Center"/>
+                                            <Button x:Name="TranslationColorButton" Width="80" Height="25" 
+                                                    Background="{Binding TranslationColor}" Click="TranslationColorButton_Click"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                                            <TextBlock Text="描边色:" Width="80" VerticalAlignment="Center"/>
+                                            <Button x:Name="TranslationStrokeColorButton" Width="80" Height="25" 
+                                                    Background="{Binding TranslationStrokeColor}" Click="TranslationStrokeColorButton_Click"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </GroupBox>
+
+                                <!-- 背景样式 -->
+                                <GroupBox Header="背景样式" Margin="0,0,0,15">
+                                    <StackPanel Margin="10">
+                                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                                            <TextBlock Text="背景色:" Width="80" VerticalAlignment="Center"/>
+                                            <Button x:Name="BackgroundColorButton" Width="80" Height="25" 
+                                                    Background="{Binding BackgroundColor}" Click="BackgroundColorButton_Click"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                                            <TextBlock Text="圆角:" Width="80" VerticalAlignment="Center"/>
+                                            <Slider x:Name="CornerRadiusSlider" Width="150" Minimum="0" Maximum="30" 
+                                                    Value="{Binding CornerRadius}" TickFrequency="2" IsSnapToTickEnabled="True"/>
+                                            <TextBlock x:Name="CornerRadiusText" Text="{Binding CornerRadius, StringFormat={}{0:F0}}" 
+                                                       Width="30" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                                            <TextBlock Text="内边距:" Width="80" VerticalAlignment="Center"/>
+                                            <Slider x:Name="PaddingSlider" Width="150" Minimum="5" Maximum="30" 
+                                                    Value="{Binding Padding}" TickFrequency="1" IsSnapToTickEnabled="True"/>
+                                            <TextBlock x:Name="PaddingText" Text="{Binding Padding, StringFormat={}{0:F0}}" 
+                                                       Width="30" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </GroupBox>
+                                
+                                <!-- 重置按钮 -->
+                                <Button x:Name="ResetStyleButton" Content="重置为默认样式" Width="150" Height="35" 
+                                        HorizontalAlignment="Left" Margin="0,10,0,0" Style="{StaticResource ControlButtonStyle}"
+                                        Click="ResetStyleButton_Click"/>
+                            </StackPanel>
+                        </Border>
+                        
                         <!-- 网易云API设置 -->
                         <Border Style="{StaticResource CardStyle}">
                             <StackPanel>

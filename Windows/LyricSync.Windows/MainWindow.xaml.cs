@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -20,22 +21,113 @@ namespace LyricSync.Windows
     /// <summary>
     /// MainWindow.xaml 的交互逻辑
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow : Window, INotifyPropertyChanged
     {
         private MainViewModel viewModel;
         private Logger logger;
         private UIService uiService;
         private DispatcherTimer progressTimer;
+        
+        // 桌面歌词样式设置属性
+        private string _mainLyricFontFamily = "Microsoft YaHei UI";
+        private double _mainLyricFontSize = 28;
+        private string _mainLyricColor = "White";
+        private string _mainLyricStrokeColor = "#000000";
+        private string _translationFontFamily = "Microsoft YaHei UI";
+        private double _translationFontSize = 20;
+        private string _translationColor = "#CCDDDDDD";
+        private string _translationStrokeColor = "#000000";
+        private string _backgroundColor = "#66000000";
+        private double _cornerRadius = 12;
+        private double _padding = 16;
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected virtual void OnPropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        // 样式设置公共属性
+        public string MainLyricFontFamily
+        {
+            get => _mainLyricFontFamily;
+            set { _mainLyricFontFamily = value; OnPropertyChanged(); ApplyStyleToDesktopLyric(); }
+        }
+
+        public double MainLyricFontSize
+        {
+            get => _mainLyricFontSize;
+            set { _mainLyricFontSize = value; OnPropertyChanged(); ApplyStyleToDesktopLyric(); }
+        }
+
+        public string MainLyricColor
+        {
+            get => _mainLyricColor;
+            set { _mainLyricColor = value; OnPropertyChanged(); ApplyStyleToDesktopLyric(); }
+        }
+
+        public string MainLyricStrokeColor
+        {
+            get => _mainLyricStrokeColor;
+            set { _mainLyricStrokeColor = value; OnPropertyChanged(); ApplyStyleToDesktopLyric(); }
+        }
+
+        public string TranslationFontFamily
+        {
+            get => _translationFontFamily;
+            set { _translationFontFamily = value; OnPropertyChanged(); ApplyStyleToDesktopLyric(); }
+        }
+
+        public double TranslationFontSize
+        {
+            get => _translationFontSize;
+            set { _translationFontSize = value; OnPropertyChanged(); ApplyStyleToDesktopLyric(); }
+        }
+
+        public string TranslationColor
+        {
+            get => _translationColor;
+            set { _translationColor = value; OnPropertyChanged(); ApplyStyleToDesktopLyric(); }
+        }
+
+        public string TranslationStrokeColor
+        {
+            get => _translationStrokeColor;
+            set { _translationStrokeColor = value; OnPropertyChanged(); ApplyStyleToDesktopLyric(); }
+        }
+
+        public string BackgroundColor
+        {
+            get => _backgroundColor;
+            set { _backgroundColor = value; OnPropertyChanged(); ApplyStyleToDesktopLyric(); }
+        }
+
+        public double CornerRadius
+        {
+            get => _cornerRadius;
+            set { _cornerRadius = value; OnPropertyChanged(); ApplyStyleToDesktopLyric(); }
+        }
+
+        public new double Padding
+        {
+            get => _padding;
+            set { _padding = value; OnPropertyChanged(); ApplyStyleToDesktopLyric(); }
+        }
 
         public MainWindow()
         {
             InitializeComponent();
             InitializeServices();
             InitializeTimer();
+            LoadStyleSettings();
         }
 
         private void InitializeServices()
         {
+            // 设置DataContext为当前窗口实例，以便XAML绑定能够工作
+            DataContext = this;
+            
             // 初始化日志服务
             logger = new Logger(LogTextBox, LogStatusText, Dispatcher);
             
@@ -556,10 +648,224 @@ namespace LyricSync.Windows
             }
         }
 
+        /// <summary>
+        /// 加载样式设置
+        /// </summary>
+        private void LoadStyleSettings()
+        {
+            try
+            {
+                var properties = Application.Current.Properties;
+                
+                if (properties.Contains("MainLyricFontFamily"))
+                    _mainLyricFontFamily = properties["MainLyricFontFamily"].ToString();
+                if (properties.Contains("MainLyricFontSize"))
+                    _mainLyricFontSize = Convert.ToDouble(properties["MainLyricFontSize"]);
+                if (properties.Contains("MainLyricColor"))
+                    _mainLyricColor = properties["MainLyricColor"].ToString();
+                if (properties.Contains("MainLyricStrokeColor"))
+                    _mainLyricStrokeColor = properties["MainLyricStrokeColor"].ToString();
+                if (properties.Contains("TranslationFontFamily"))
+                    _translationFontFamily = properties["TranslationFontFamily"].ToString();
+                if (properties.Contains("TranslationFontSize"))
+                    _translationFontSize = Convert.ToDouble(properties["TranslationFontSize"]);
+                if (properties.Contains("TranslationColor"))
+                    _translationColor = properties["TranslationColor"].ToString();
+                if (properties.Contains("TranslationStrokeColor"))
+                    _translationStrokeColor = properties["TranslationStrokeColor"].ToString();
+                if (properties.Contains("BackgroundColor"))
+                    _backgroundColor = properties["BackgroundColor"].ToString();
+                if (properties.Contains("CornerRadius"))
+                    _cornerRadius = Convert.ToDouble(properties["CornerRadius"]);
+                if (properties.Contains("Padding"))
+                    _padding = Convert.ToDouble(properties["Padding"]);
+            }
+            catch (Exception ex)
+            {
+                logger?.LogMessage($"⚠️ 加载样式设置失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 保存样式设置
+        /// </summary>
+        private void SaveStyleSettings()
+        {
+            try
+            {
+                var properties = Application.Current.Properties;
+                properties["MainLyricFontFamily"] = _mainLyricFontFamily;
+                properties["MainLyricFontSize"] = _mainLyricFontSize;
+                properties["MainLyricColor"] = _mainLyricColor;
+                properties["MainLyricStrokeColor"] = _mainLyricStrokeColor;
+                properties["TranslationFontFamily"] = _translationFontFamily;
+                properties["TranslationFontSize"] = _translationFontSize;
+                properties["TranslationColor"] = _translationColor;
+                properties["TranslationStrokeColor"] = _translationStrokeColor;
+                properties["BackgroundColor"] = _backgroundColor;
+                properties["CornerRadius"] = _cornerRadius;
+                properties["Padding"] = _padding;
+            }
+            catch (Exception ex)
+            {
+                logger?.LogMessage($"⚠️ 保存样式设置失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 应用样式到桌面歌词窗口
+        /// </summary>
+        private void ApplyStyleToDesktopLyric()
+        {
+            try
+            {
+                var desktopWindow = viewModel?.GetDesktopLyricWindow();
+                if (desktopWindow != null)
+                {
+                    desktopWindow.MainLyricFontFamily = _mainLyricFontFamily;
+                    desktopWindow.MainLyricFontSize = _mainLyricFontSize;
+                    desktopWindow.MainLyricColor = _mainLyricColor;
+                    desktopWindow.MainLyricStrokeColor = _mainLyricStrokeColor;
+                    desktopWindow.TranslationFontFamily = _translationFontFamily;
+                    desktopWindow.TranslationFontSize = _translationFontSize;
+                    desktopWindow.TranslationColor = _translationColor;
+                    desktopWindow.TranslationStrokeColor = _translationStrokeColor;
+                    desktopWindow.BackgroundColor = _backgroundColor;
+                    desktopWindow.CornerRadius = _cornerRadius;
+                    desktopWindow.Padding = _padding;
+                }
+            }
+            catch (Exception ex)
+            {
+                logger?.LogMessage($"⚠️ 应用样式到桌面歌词窗口失败: {ex.Message}");
+            }
+        }
+
+        // 样式设置事件处理方法
+        private void MainLyricColorButton_Click(object sender, RoutedEventArgs e)
+        {
+            var colorDialog = new System.Windows.Forms.ColorDialog();
+            try
+            {
+                colorDialog.Color = System.Drawing.ColorTranslator.FromHtml(_mainLyricColor);
+            }
+            catch
+            {
+                colorDialog.Color = System.Drawing.Color.White;
+            }
+            
+            if (colorDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                var color = colorDialog.Color;
+                MainLyricColor = $"#{color.R:X2}{color.G:X2}{color.B:X2}";
+                SaveStyleSettings();
+            }
+        }
+
+        private void TranslationColorButton_Click(object sender, RoutedEventArgs e)
+        {
+            var colorDialog = new System.Windows.Forms.ColorDialog();
+            try
+            {
+                colorDialog.Color = System.Drawing.ColorTranslator.FromHtml(_translationColor);
+            }
+            catch
+            {
+                colorDialog.Color = System.Drawing.Color.LightGray;
+            }
+            
+            if (colorDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                var color = colorDialog.Color;
+                TranslationColor = $"#{color.R:X2}{color.G:X2}{color.B:X2}";
+                SaveStyleSettings();
+            }
+        }
+
+        private void BackgroundColorButton_Click(object sender, RoutedEventArgs e)
+        {
+            var colorDialog = new System.Windows.Forms.ColorDialog();
+            try
+            {
+                colorDialog.Color = System.Drawing.ColorTranslator.FromHtml(_backgroundColor);
+            }
+            catch
+            {
+                colorDialog.Color = System.Drawing.Color.Black;
+            }
+            
+            if (colorDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                var color = colorDialog.Color;
+                BackgroundColor = $"#{color.R:X2}{color.G:X2}{color.B:X2}";
+                SaveStyleSettings();
+            }
+        }
+
+        private void MainLyricStrokeColorButton_Click(object sender, RoutedEventArgs e)
+        {
+            var colorDialog = new System.Windows.Forms.ColorDialog();
+            try
+            {
+                colorDialog.Color = System.Drawing.ColorTranslator.FromHtml(_mainLyricStrokeColor);
+            }
+            catch
+            {
+                colorDialog.Color = System.Drawing.Color.Black;
+            }
+            
+            if (colorDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                var color = colorDialog.Color;
+                MainLyricStrokeColor = $"#{color.R:X2}{color.G:X2}{color.B:X2}";
+                SaveStyleSettings();
+            }
+        }
+
+        private void TranslationStrokeColorButton_Click(object sender, RoutedEventArgs e)
+        {
+            var colorDialog = new System.Windows.Forms.ColorDialog();
+            try
+            {
+                colorDialog.Color = System.Drawing.ColorTranslator.FromHtml(_translationStrokeColor);
+            }
+            catch
+            {
+                colorDialog.Color = System.Drawing.Color.Black;
+            }
+            
+            if (colorDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                var color = colorDialog.Color;
+                TranslationStrokeColor = $"#{color.R:X2}{color.G:X2}{color.B:X2}";
+                SaveStyleSettings();
+            }
+        }
+
+        private void ResetStyleButton_Click(object sender, RoutedEventArgs e)
+        {
+            // 重置为默认样式
+            MainLyricFontFamily = "Microsoft YaHei UI";
+            MainLyricFontSize = 28;
+            MainLyricColor = "White";
+            MainLyricStrokeColor = "#000000";
+            TranslationFontFamily = "Microsoft YaHei UI";
+            TranslationFontSize = 20;
+            TranslationColor = "#CCDDDDDD";
+            TranslationStrokeColor = "#000000";
+            BackgroundColor = "#66000000";
+            CornerRadius = 12;
+            Padding = 16;
+            SaveStyleSettings();
+        }
+
         protected override void OnClosed(EventArgs e)
         {
             try
             {
+                // 保存样式设置
+                SaveStyleSettings();
+                
                 // 取消订阅事件
                 if (viewModel != null)
                 {

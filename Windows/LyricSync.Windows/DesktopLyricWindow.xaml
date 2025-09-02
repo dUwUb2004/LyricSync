@@ -10,7 +10,11 @@
         ShowInTaskbar="False"
         Topmost="True">
     <Grid>
-        <Border x:Name="BackgroundBorder" Background="#66000000" CornerRadius="12" Padding="16" MouseLeftButtonDown="Border_MouseLeftButtonDown">
+        <Border x:Name="BackgroundBorder" 
+                Background="{Binding BackgroundColor}" 
+                CornerRadius="{Binding CornerRadius}" 
+                Padding="{Binding Padding}" 
+                MouseLeftButtonDown="Border_MouseLeftButtonDown">
             <Border.ContextMenu>
                 <ContextMenu>
                     <MenuItem Header="锁定窗口" IsCheckable="True" IsChecked="{Binding IsLocked, Mode=TwoWay}"/>
@@ -79,21 +83,163 @@
 
                 <!-- 歌词内容 -->
                 <StackPanel Grid.Row="1">
-                    <!-- 主歌词 -->
-                    <TextBlock Text="{Binding CurrentLine.Text}"
-                               FontSize="28"
-                               Foreground="White"
+                    <!-- 主歌词 - 使用Grid实现描边效果 -->
+                    <Grid>
+                        <!-- 描边层 - 8个方向的描边 -->
+                        <TextBlock x:Name="MainLyricStroke1" Text="{Binding CurrentLine.Text}" FontSize="{Binding MainLyricFontSize}" FontFamily="{Binding MainLyricFontFamily}" Foreground="{Binding MainLyricStrokeColor}" TextAlignment="Center" TextWrapping="Wrap" Margin="-1,-1,0,0"/>
+                        <TextBlock x:Name="MainLyricStroke2" Text="{Binding CurrentLine.Text}" FontSize="{Binding MainLyricFontSize}" FontFamily="{Binding MainLyricFontFamily}" Foreground="{Binding MainLyricStrokeColor}" TextAlignment="Center" TextWrapping="Wrap" Margin="1,-1,0,0"/>
+                        <TextBlock x:Name="MainLyricStroke3" Text="{Binding CurrentLine.Text}" FontSize="{Binding MainLyricFontSize}" FontFamily="{Binding MainLyricFontFamily}" Foreground="{Binding MainLyricStrokeColor}" TextAlignment="Center" TextWrapping="Wrap" Margin="-1,1,0,0"/>
+                        <TextBlock x:Name="MainLyricStroke4" Text="{Binding CurrentLine.Text}" FontSize="{Binding MainLyricFontSize}" FontFamily="{Binding MainLyricFontFamily}" Foreground="{Binding MainLyricStrokeColor}" TextAlignment="Center" TextWrapping="Wrap" Margin="1,1,0,0"/>
+                        <TextBlock x:Name="MainLyricStroke5" Text="{Binding CurrentLine.Text}" FontSize="{Binding MainLyricFontSize}" FontFamily="{Binding MainLyricFontFamily}" Foreground="{Binding MainLyricStrokeColor}" TextAlignment="Center" TextWrapping="Wrap" Margin="0,-1,0,0"/>
+                        <TextBlock x:Name="MainLyricStroke6" Text="{Binding CurrentLine.Text}" FontSize="{Binding MainLyricFontSize}" FontFamily="{Binding MainLyricFontFamily}" Foreground="{Binding MainLyricStrokeColor}" TextAlignment="Center" TextWrapping="Wrap" Margin="0,1,0,0"/>
+                        <TextBlock x:Name="MainLyricStroke7" Text="{Binding CurrentLine.Text}" FontSize="{Binding MainLyricFontSize}" FontFamily="{Binding MainLyricFontFamily}" Foreground="{Binding MainLyricStrokeColor}" TextAlignment="Center" TextWrapping="Wrap" Margin="-1,0,0,0"/>
+                        <TextBlock x:Name="MainLyricStroke8" Text="{Binding CurrentLine.Text}" FontSize="{Binding MainLyricFontSize}" FontFamily="{Binding MainLyricFontFamily}" Foreground="{Binding MainLyricStrokeColor}" TextAlignment="Center" TextWrapping="Wrap" Margin="1,0,0,0"/>
+                        <!-- 主文字层 -->
+                        <TextBlock x:Name="MainLyricTextBlock"
+                                   Text="{Binding CurrentLine.Text}"
+                                   FontSize="{Binding MainLyricFontSize}"
+                                   FontFamily="{Binding MainLyricFontFamily}"
+                                   Foreground="{Binding MainLyricColor}"
                                TextAlignment="Center"
-                               TextWrapping="Wrap">
-                        <TextBlock.Effect>
-                            <DropShadowEffect Color="#AA000000" BlurRadius="8" ShadowDepth="0"/>
-                        </TextBlock.Effect>
+                                   TextWrapping="Wrap"/>
+                    </Grid>
+                    <!-- 翻译歌词 - 使用Grid实现描边效果 -->
+                    <Grid Margin="0,6,0,0">
+                        <!-- 描边层 - 8个方向的描边 -->
+                        <TextBlock x:Name="TranslationStroke1" Text="{Binding CurrentLine.Translation}" FontSize="{Binding TranslationFontSize}" FontFamily="{Binding TranslationFontFamily}" Foreground="{Binding TranslationStrokeColor}" TextAlignment="Center" TextWrapping="Wrap" Margin="-1,-1,0,0">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding ShowTranslation}" Value="True"/>
+                                                <Condition Binding="{Binding CurrentLine.HasTranslation}" Value="True"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock x:Name="TranslationStroke2" Text="{Binding CurrentLine.Translation}" FontSize="{Binding TranslationFontSize}" FontFamily="{Binding TranslationFontFamily}" Foreground="{Binding TranslationStrokeColor}" TextAlignment="Center" TextWrapping="Wrap" Margin="1,-1,0,0">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding ShowTranslation}" Value="True"/>
+                                                <Condition Binding="{Binding CurrentLine.HasTranslation}" Value="True"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock x:Name="TranslationStroke3" Text="{Binding CurrentLine.Translation}" FontSize="{Binding TranslationFontSize}" FontFamily="{Binding TranslationFontFamily}" Foreground="{Binding TranslationStrokeColor}" TextAlignment="Center" TextWrapping="Wrap" Margin="-1,1,0,0">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding ShowTranslation}" Value="True"/>
+                                                <Condition Binding="{Binding CurrentLine.HasTranslation}" Value="True"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock x:Name="TranslationStroke4" Text="{Binding CurrentLine.Translation}" FontSize="{Binding TranslationFontSize}" FontFamily="{Binding TranslationFontFamily}" Foreground="{Binding TranslationStrokeColor}" TextAlignment="Center" TextWrapping="Wrap" Margin="1,1,0,0">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding ShowTranslation}" Value="True"/>
+                                                <Condition Binding="{Binding CurrentLine.HasTranslation}" Value="True"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock x:Name="TranslationStroke5" Text="{Binding CurrentLine.Translation}" FontSize="{Binding TranslationFontSize}" FontFamily="{Binding TranslationFontFamily}" Foreground="{Binding TranslationStrokeColor}" TextAlignment="Center" TextWrapping="Wrap" Margin="0,-1,0,0">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding ShowTranslation}" Value="True"/>
+                                                <Condition Binding="{Binding CurrentLine.HasTranslation}" Value="True"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock x:Name="TranslationStroke6" Text="{Binding CurrentLine.Translation}" FontSize="{Binding TranslationFontSize}" FontFamily="{Binding TranslationFontFamily}" Foreground="{Binding TranslationStrokeColor}" TextAlignment="Center" TextWrapping="Wrap" Margin="0,1,0,0">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding ShowTranslation}" Value="True"/>
+                                                <Condition Binding="{Binding CurrentLine.HasTranslation}" Value="True"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock x:Name="TranslationStroke7" Text="{Binding CurrentLine.Translation}" FontSize="{Binding TranslationFontSize}" FontFamily="{Binding TranslationFontFamily}" Foreground="{Binding TranslationStrokeColor}" TextAlignment="Center" TextWrapping="Wrap" Margin="-1,0,0,0">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding ShowTranslation}" Value="True"/>
+                                                <Condition Binding="{Binding CurrentLine.HasTranslation}" Value="True"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock x:Name="TranslationStroke8" Text="{Binding CurrentLine.Translation}" FontSize="{Binding TranslationFontSize}" FontFamily="{Binding TranslationFontFamily}" Foreground="{Binding TranslationStrokeColor}" TextAlignment="Center" TextWrapping="Wrap" Margin="1,0,0,0">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding ShowTranslation}" Value="True"/>
+                                                <Condition Binding="{Binding CurrentLine.HasTranslation}" Value="True"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
                     </TextBlock>
-                    <!-- 翻译歌词 -->
-                    <TextBlock Text="{Binding CurrentLine.Translation}"
-                               Margin="0,6,0,0"
-                               FontSize="20"
-                               Foreground="#CCDDDDDD"
+                        <!-- 主文字层 -->
+                        <TextBlock x:Name="TranslationTextBlock"
+                                   Text="{Binding CurrentLine.Translation}"
+                                   FontSize="{Binding TranslationFontSize}"
+                                   FontFamily="{Binding TranslationFontFamily}"
+                                   Foreground="{Binding TranslationColor}"
                                TextAlignment="Center"
                                TextWrapping="Wrap">
                         <TextBlock.Style>
@@ -110,10 +256,8 @@
                                 </Style.Triggers>
                             </Style>
                         </TextBlock.Style>
-                        <TextBlock.Effect>
-                            <DropShadowEffect Color="#AA000000" BlurRadius="6" ShadowDepth="0"/>
-                        </TextBlock.Effect>
                     </TextBlock>
+                    </Grid>
                 </StackPanel>
             </Grid>
         </Border>
