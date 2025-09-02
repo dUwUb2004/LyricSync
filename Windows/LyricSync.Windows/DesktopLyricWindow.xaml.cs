@@ -16,6 +16,7 @@ namespace LyricSync.Windows
         private int _currentLineIndex = -1;
         private bool _showTranslation = true;
         private double _opacityPercent = 90; // 0-100
+        private double _backgroundOpacityPercent = 40; // 背景透明度 0-100
         private bool _isLocked = false; // 锁定后不可拖动
 
         public ObservableCollection<LyricLine> LyricLines
@@ -63,6 +64,17 @@ namespace LyricSync.Windows
         {
             get => _isLocked;
             set { _isLocked = value; OnPropertyChanged(); }
+        }
+
+        public double BackgroundOpacityPercent
+        {
+            get => _backgroundOpacityPercent;
+            set
+            {
+                _backgroundOpacityPercent = value;
+                OnPropertyChanged();
+                UpdateBackgroundOpacity();
+            }
         }
 
         public DesktopLyricWindow()
@@ -131,6 +143,36 @@ namespace LyricSync.Windows
             if (SendControlAsync != null)
             {
                 try { await SendControlAsync(87); } catch { }
+            }
+        }
+
+        /// <summary>
+        /// 更新背景透明度
+        /// </summary>
+        private void UpdateBackgroundOpacity()
+        {
+            try
+            {
+                // 将百分比转换为十六进制透明度值
+                int alphaValue = (int)(_backgroundOpacityPercent * 255 / 100);
+                alphaValue = System.Math.Max(0, System.Math.Min(255, alphaValue)); // 确保在有效范围内
+                
+                // 创建新的背景颜色
+                string hexAlpha = alphaValue.ToString("X2");
+                string newBackgroundColor = $"#{hexAlpha}000000";
+                
+                // 查找并更新背景Border
+                var border = FindName("BackgroundBorder") as System.Windows.Controls.Border;
+                if (border != null)
+                {
+                    var brush = new System.Windows.Media.SolidColorBrush(
+                        (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(newBackgroundColor));
+                    border.Background = brush;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"更新背景透明度失败: {ex.Message}");
             }
         }
 

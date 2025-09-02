@@ -308,6 +308,15 @@ namespace LyricSync.Windows
             ApplyDesktopSettings();
         }
 
+        private void DesktopBackgroundOpacitySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (DesktopBackgroundOpacityText != null)
+            {
+                DesktopBackgroundOpacityText.Text = $"{e.NewValue:F0}%";
+            }
+            ApplyDesktopSettings();
+        }
+
         private void ApplyDesktopSettings()
         {
             try
@@ -331,6 +340,9 @@ namespace LyricSync.Windows
                     
                     if (DesktopOpacitySlider != null)
                         desktopWindow.OpacityPercent = DesktopOpacitySlider.Value;
+                    
+                    if (DesktopBackgroundOpacitySlider != null)
+                        desktopWindow.BackgroundOpacityPercent = DesktopBackgroundOpacitySlider.Value;
                     
                     // TODO: 应用字体大小设置
                     

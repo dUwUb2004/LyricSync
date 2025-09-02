@@ -359,7 +359,7 @@
                                             </StackPanel>
                                         </StackPanel>
                                         
-                                        <StackPanel>
+                                        <StackPanel Margin="0,0,0,15">
                                             <TextBlock Text="字体大小" FontSize="14" FontWeight="Medium" Margin="0,0,0,8"/>
                                             <StackPanel Orientation="Horizontal">
                                                 <Slider x:Name="DesktopFontSizeSlider"
@@ -369,6 +369,22 @@
                                                         ValueChanged="DesktopFontSizeSlider_ValueChanged"/>
                                                 <TextBlock x:Name="DesktopFontSizeText"
                                                            Text="28"
+                                                           Margin="15,0,0,0"
+                                                           VerticalAlignment="Center"
+                                                           FontWeight="Medium"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                        
+                                        <StackPanel>
+                                            <TextBlock Text="背景透明度" FontSize="14" FontWeight="Medium" Margin="0,0,0,8"/>
+                                            <StackPanel Orientation="Horizontal">
+                                                <Slider x:Name="DesktopBackgroundOpacitySlider"
+                                                        Minimum="0" Maximum="100"
+                                                        Value="40"
+                                                        Width="150"
+                                                        ValueChanged="DesktopBackgroundOpacitySlider_ValueChanged"/>
+                                                <TextBlock x:Name="DesktopBackgroundOpacityText"
+                                                           Text="40%"
                                                            Margin="15,0,0,0"
                                                            VerticalAlignment="Center"
                                                            FontWeight="Medium"/>

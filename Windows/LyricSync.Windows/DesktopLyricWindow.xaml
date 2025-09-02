@@ -10,7 +10,7 @@
         ShowInTaskbar="False"
         Topmost="True">
     <Grid>
-        <Border Background="#66000000" CornerRadius="12" Padding="16" MouseLeftButtonDown="Border_MouseLeftButtonDown">
+        <Border x:Name="BackgroundBorder" Background="#66000000" CornerRadius="12" Padding="16" MouseLeftButtonDown="Border_MouseLeftButtonDown">
             <Border.ContextMenu>
                 <ContextMenu>
                     <MenuItem Header="锁定窗口" IsCheckable="True" IsChecked="{Binding IsLocked, Mode=TwoWay}"/>
