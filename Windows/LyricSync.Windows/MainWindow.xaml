@@ -2,55 +2,15 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        Background="{DynamicResource MaterialDesign.Brush.Background}"
+        FontFamily="{materialDesign:MaterialDesignFont}"
         Title="LyricSync - 音乐同步" Height="600" Width="800"
         WindowStartupLocation="CenterScreen"
-        Background="#F5F5F5">
-    
+        Style="{StaticResource MaterialDesignWindow}">
+
     <Window.Resources>
-        <!-- 按钮样式 -->
-        <Style x:Key="ControlButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="#303f9f"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="20,10"/>
-            <Setter Property="Margin" Value="5"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="FontWeight" Value="Medium"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" 
-                                CornerRadius="8"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" 
-                                            VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#3f51b5"/>
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Background" Value="#303f9f"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        
-        <!-- 卡片样式 -->
-        <Style x:Key="CardStyle" TargetType="Border">
-            <Setter Property="Background" Value="White"/>
-            <Setter Property="CornerRadius" Value="12"/>
-            <Setter Property="Padding" Value="20"/>
-            <Setter Property="Margin" Value="10"/>
-            <Setter Property="Effect">
-                <Setter.Value>
-                    <DropShadowEffect Color="#20000000" Direction="270" ShadowDepth="3" BlurRadius="10"/>
-                </Setter.Value>
-            </Setter>
-        </Style>
+        <!-- 使用App.xaml中定义的主题资源 -->
     </Window.Resources>
     
     <Grid>
@@ -61,7 +21,7 @@
         </Grid.RowDefinitions>
         
         <!-- 标题栏 -->
-        <Border Grid.Row="0" Background="#303f9f" Padding="20,15">
+        <Border Grid.Row="0" Background="{DynamicResource MaterialDesign.Brush.Primary}" Padding="20,15">
             <StackPanel Orientation="Horizontal">
                 <iconPacks:PackIconMaterial Kind="Music" Width="24" Height="24" VerticalAlignment="Center" Margin="0,0,15,0" Foreground="White"/>
                 <TextBlock Text="LyricSync" FontSize="24" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
@@ -73,10 +33,14 @@
         <Grid Grid.Row="1">
             <!-- 主页内容 -->
             <Grid x:Name="MainPageGrid" Visibility="Visible">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="10">
                     <StackPanel>
-                <!-- 连接状态卡片 -->
-                <Border Style="{StaticResource CardStyle}">
+                                        <!-- 连接状态卡片 -->
+                        <Border Background="#2D2D30" 
+                                CornerRadius="8" 
+                                Padding="20" 
+                                Margin="15,10"
+                                Effect="{DynamicResource MaterialDesignElevationShadow2}">
                     <StackPanel>
                         <TextBlock Text="连接状态" FontSize="18" FontWeight="Bold" Margin="0,0,0,15"/>
                         <Grid>
@@ -92,14 +56,18 @@
                             
                             <Button x:Name="ConnectButton" Grid.Column="1" 
                                     Content="开始监听" 
-                                    Style="{StaticResource ControlButtonStyle}"
+                                    Style="{StaticResource MaterialDesignRaisedButton}"
                                     Click="ConnectButton_Click"/>
                         </Grid>
                     </StackPanel>
                 </Border>
                 
-                <!-- 音乐信息卡片 -->
-                <Border Style="{StaticResource CardStyle}">
+                                        <!-- 音乐信息卡片 -->
+                        <Border Background="#2D2D30" 
+                                CornerRadius="8" 
+                                Padding="20" 
+                                Margin="15,10"
+                                Effect="{DynamicResource MaterialDesignElevationShadow2}">
                     <StackPanel>
                         <TextBlock Text="当前播放" FontSize="18" FontWeight="Bold" Margin="0,0,0,15"/>
                         
@@ -133,15 +101,17 @@
                         
                         <!-- 播放控制按钮 -->
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                            <Button x:Name="PreviousButton" Style="{StaticResource ControlButtonStyle}" 
+                            <Button x:Name="PreviousButton" Style="{StaticResource MaterialDesignRaisedButton}" 
+                                    Margin="0,0,10,0"
                                     Click="PreviousButton_Click">
                                 <iconPacks:PackIconMaterial Kind="SkipPrevious" Width="20" Height="20" Foreground="White"/>
                             </Button>
-                            <Button x:Name="PlayPauseButton" Style="{StaticResource ControlButtonStyle}" 
+                            <Button x:Name="PlayPauseButton" Style="{StaticResource MaterialDesignRaisedButton}" 
+                                    Margin="0,0,10,0"
                                     Click="PlayPauseButton_Click">
                                 <iconPacks:PackIconMaterial Kind="Pause" Width="20" Height="20" Foreground="White"/>
                             </Button>
-                            <Button x:Name="NextButton" Style="{StaticResource ControlButtonStyle}" 
+                            <Button x:Name="NextButton" Style="{StaticResource MaterialDesignRaisedButton}" 
                                     Click="NextButton_Click">
                                 <iconPacks:PackIconMaterial Kind="SkipNext" Width="20" Height="20" Foreground="White"/>
                             </Button>
@@ -149,40 +119,44 @@
                         
                         <!-- 控制按钮 -->
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,15,0,0">
-                            <Button x:Name="TestSearchButton" Style="{StaticResource ControlButtonStyle}"
+                            <Button x:Name="TestSearchButton" Style="{StaticResource MaterialDesignOutlinedButton}"
+                                    Margin="0,0,8,0"
                                     Click="TestSearchButton_Click">
                                 <StackPanel Orientation="Horizontal">
-                                    <iconPacks:PackIconMaterial Kind="TestTube" Width="16" Height="16" Foreground="White" Margin="0,0,5,0"/>
-                                    <TextBlock Text="测试搜索" Foreground="White"/>
+                                    <iconPacks:PackIconMaterial Kind="TestTube" Width="16" Height="16" Margin="0,0,5,0"/>
+                                    <TextBlock Text="测试搜索"/>
                                 </StackPanel>
                             </Button>
-                            <Button x:Name="ExportLrcButton" Style="{StaticResource ControlButtonStyle}"
+                            <Button x:Name="ExportLrcButton" Style="{StaticResource MaterialDesignOutlinedButton}"
+                                    Margin="0,0,8,0"
                                     Click="ExportLrcButton_Click">
                                 <StackPanel Orientation="Horizontal">
-                                    <iconPacks:PackIconMaterial Kind="FileDocument" Width="16" Height="16" Foreground="White" Margin="0,0,5,0"/>
-                                    <TextBlock Text="导出LRC歌词" Foreground="White"/>
+                                    <iconPacks:PackIconMaterial Kind="FileDocument" Width="16" Height="16" Margin="0,0,5,0"/>
+                                    <TextBlock Text="导出LRC歌词"/>
                                 </StackPanel>
                             </Button>
-                            <Button x:Name="ShowLyricButton" Style="{StaticResource ControlButtonStyle}"
+                            <Button x:Name="ShowLyricButton" Style="{StaticResource MaterialDesignOutlinedButton}"
+                                    Margin="0,0,8,0"
                                     Click="ShowLyricButton_Click">
                                 <StackPanel Orientation="Horizontal">
-                                    <iconPacks:PackIconMaterial Kind="AutoFix" Width="16" Height="16" Foreground="White" Margin="0,0,5,0"/>
-                                    <TextBlock Text="显示歌词" Foreground="White"/>
+                                    <iconPacks:PackIconMaterial Kind="AutoFix" Width="16" Height="16" Margin="0,0,5,0"/>
+                                    <TextBlock Text="显示歌词"/>
                                 </StackPanel>
                             </Button>
-                            <Button x:Name="ShowDesktopLyricButton" Style="{StaticResource ControlButtonStyle}"
+                            <Button x:Name="ShowDesktopLyricButton" Style="{StaticResource MaterialDesignOutlinedButton}"
+                                    Margin="0,0,8,0"
                                     Click="ShowDesktopLyricButton_Click">
                                 <StackPanel Orientation="Horizontal">
-                                    <iconPacks:PackIconMaterial Kind="WindowOpen" Width="16" Height="16" Foreground="White" Margin="0,0,5,0"/>
-                                    <TextBlock Text="桌面歌词" Foreground="White"/>
+                                    <iconPacks:PackIconMaterial Kind="WindowOpen" Width="16" Height="16" Margin="0,0,5,0"/>
+                                    <TextBlock Text="桌面歌词"/>
                                 </StackPanel>
                             </Button>
                                 
-                            <Button x:Name="SettingsButton" Style="{StaticResource ControlButtonStyle}"
+                            <Button x:Name="SettingsButton" Style="{StaticResource MaterialDesignOutlinedButton}"
                                     Click="SettingsButton_Click">
                                 <StackPanel Orientation="Horizontal">
-                                    <iconPacks:PackIconMaterial Kind="Cog" Width="16" Height="16" Foreground="White" Margin="0,0,5,0"/>
-                                    <TextBlock Text="设置" Foreground="White"/>
+                                    <iconPacks:PackIconMaterial Kind="Cog" Width="16" Height="16" Margin="0,0,5,0"/>
+                                    <TextBlock Text="设置"/>
                                 </StackPanel>
                             </Button>
 
@@ -193,13 +167,13 @@
                         <Expander x:Name="MatchedSongExpander" Margin="0,20,0,0" IsExpanded="False">
                             <Expander.Header>
                                 <StackPanel Orientation="Horizontal">
-                                    <iconPacks:PackIconMaterial Kind="Target" Width="16" Height="16" Foreground="#303f9f" Margin="0,0,5,0"/>
-                                    <TextBlock Text="网易云匹配信息" Foreground="#303f9f"/>
+                                    <iconPacks:PackIconMaterial Kind="Target" Width="16" Height="16" Margin="0,0,5,0"/>
+                                    <TextBlock Text="网易云匹配信息"/>
                                 </StackPanel>
                             </Expander.Header>
                             <StackPanel x:Name="MatchedSongPanel" Margin="0,10,0,0">
                                 <!-- 封面和歌曲信息布局 -->
-                                <Grid Margin="0,0,0,10">
+                                <Grid Margin="10,0,0,10">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
@@ -238,13 +212,13 @@
                                 <Expander Margin="0,10,0,0" IsExpanded="False">
                                     <Expander.Header>
                                         <StackPanel Orientation="Horizontal">
-                                            <iconPacks:PackIconMaterial Kind="FileDocument" Width="16" Height="16" Foreground="#303f9f" Margin="0,0,5,0"/>
-                                            <TextBlock Text="完整JSON数据" Foreground="#303f9f"/>
+                                            <iconPacks:PackIconMaterial Kind="FileDocument" Width="16" Height="16" Margin="0,0,5,0"/>
+                                            <TextBlock Text="完整JSON数据"/>
                                         </StackPanel>
                                     </Expander.Header>
                                     <ScrollViewer Height="200" VerticalScrollBarVisibility="Auto">
                                         <TextBox x:Name="JsonDisplayTextBox" IsReadOnly="True" 
-                                                 Background="#F8F8F8" BorderThickness="0" 
+                                                 BorderThickness="0" 
                                                  FontFamily="Consolas" FontSize="11" 
                                                  TextWrapping="Wrap"/>
                                     </ScrollViewer>
@@ -254,8 +228,12 @@
                     </StackPanel>
                 </Border>
                 
-                <!-- 日志信息卡片 -->
-                <Border Style="{StaticResource CardStyle}">
+                                        <!-- 日志信息卡片 -->
+                        <Border Background="#2D2D30" 
+                                CornerRadius="8" 
+                                Padding="20" 
+                                Margin="15,10"
+                                Effect="{DynamicResource MaterialDesignElevationShadow2}">
                     <StackPanel>
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -266,25 +244,25 @@
                             <TextBlock Grid.Column="0" Text="连接日志" FontSize="18" FontWeight="Bold" Margin="0,0,0,15"/>
                             
                             <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,15">
-                                <Button x:Name="ClearLogButton" Style="{StaticResource ControlButtonStyle}" Margin="0,0,5,0"
+                                <Button x:Name="ClearLogButton" Style="{StaticResource MaterialDesignRaisedButton}" Margin="0,0,5,0"
                                         Click="ClearLogButton_Click">
                                     <StackPanel Orientation="Horizontal">
-                                        <iconPacks:PackIconMaterial Kind="Broom" Width="16" Height="16" Foreground="White" Margin="0,0,5,0"/>
-                                        <TextBlock Text="清理日志" Foreground="White"/>
+                                        <iconPacks:PackIconMaterial Kind="Broom" Width="16" Height="16" Margin="0,0,5,0"/>
+                                        <TextBlock Text="清理日志"/>
                                     </StackPanel>
                                 </Button>
-                                <Button x:Name="LogInfoButton" Style="{StaticResource ControlButtonStyle}"
+                                <Button x:Name="LogInfoButton" Style="{StaticResource MaterialDesignOutlinedButton}"
                                         Click="LogInfoButton_Click">
                                     <StackPanel Orientation="Horizontal">
-                                        <iconPacks:PackIconMaterial Kind="ChartLine" Width="16" Height="16" Foreground="White" Margin="0,0,5,0"/>
-                                        <TextBlock Text="日志信息" Foreground="White"/>
+                                        <iconPacks:PackIconMaterial Kind="ChartLine" Width="16" Height="16" Margin="0,0,5,0"/>
+                                        <TextBlock Text="日志信息"/>
                                     </StackPanel>
                                 </Button>
                             </StackPanel>
                         </Grid>
                         
                         <ScrollViewer Height="150" VerticalScrollBarVisibility="Auto">
-                            <TextBox x:Name="LogTextBox" IsReadOnly="True" Background="#F8F8F8" 
+                            <TextBox x:Name="LogTextBox" IsReadOnly="True"
                                      BorderThickness="0" FontFamily="Consolas" FontSize="12"/>
                         </ScrollViewer>
                         
@@ -298,13 +276,13 @@
             
             <!-- 设置页面内容 -->
             <Grid x:Name="SettingsPageGrid" Visibility="Collapsed">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="10">
                     <StackPanel>
                         <!-- 返回按钮 -->
                         <Button x:Name="BackToMainButton" 
                                 HorizontalAlignment="Left"
-                                Margin="0,0,0,20"
-                                Style="{StaticResource ControlButtonStyle}"
+                                Margin="15,8,0,20"
+                                Style="{StaticResource MaterialDesignRaisedButton}"
                                 Click="BackToMainButton_Click">
                             <StackPanel Orientation="Horizontal">
                                 <iconPacks:PackIconMaterial Kind="ArrowLeft" Width="16" Height="16" Foreground="White" Margin="0,0,5,0"/>
@@ -312,7 +290,11 @@
                             </StackPanel>
                         </Button>
                         <!-- 桌面歌词设置 -->
-                        <Border Style="{StaticResource CardStyle}">
+                        <Border Background="#2D2D30" 
+                                CornerRadius="8" 
+                                Padding="20" 
+                                Margin="15,10"
+                                Effect="{DynamicResource MaterialDesignElevationShadow2}">
                             <StackPanel>
                                 <TextBlock Text="桌面歌词设置" FontSize="18" FontWeight="Bold" Margin="0,0,0,15"/>
                                 <Grid>
@@ -396,7 +378,11 @@
                         </Border>
                         
                         <!-- 桌面歌词样式设置 -->
-                        <Border Style="{StaticResource CardStyle}">
+                        <Border Background="#2D2D30" 
+                                CornerRadius="8" 
+                                Padding="20" 
+                                Margin="15,10"
+                                Effect="{DynamicResource MaterialDesignElevationShadow2}">
                             <StackPanel>
                                 <TextBlock Text="桌面歌词样式设置" FontSize="18" FontWeight="Bold" Margin="0,0,0,15"/>
                                 
@@ -405,7 +391,8 @@
                                     <StackPanel Margin="10">
                                         <StackPanel Orientation="Horizontal" Margin="0,5">
                                             <TextBlock Text="字体:" Width="80" VerticalAlignment="Center"/>
-                                            <ComboBox x:Name="MainLyricFontComboBox" Width="150" SelectedItem="{Binding MainLyricFontFamily}">
+                                            <ComboBox x:Name="MainLyricFontComboBox" Width="150" SelectedItem="{Binding MainLyricFontFamily}"
+>
                                                 <ComboBoxItem Content="Microsoft YaHei UI"/>
                                                 <ComboBoxItem Content="Microsoft YaHei"/>
                                                 <ComboBoxItem Content="SimHei"/>
@@ -417,7 +404,8 @@
                                         <StackPanel Orientation="Horizontal" Margin="0,5">
                                             <TextBlock Text="大小:" Width="80" VerticalAlignment="Center"/>
                                             <Slider x:Name="MainLyricSizeSlider" Width="150" Minimum="12" Maximum="48" 
-                                                    Value="{Binding MainLyricFontSize}" TickFrequency="2" IsSnapToTickEnabled="True"/>
+                                                    Value="{Binding MainLyricFontSize}" TickFrequency="2" IsSnapToTickEnabled="True"
+/>
                                             <TextBlock x:Name="MainLyricSizeText" Text="{Binding MainLyricFontSize, StringFormat={}{0:F0}}" 
                                                        Width="30" VerticalAlignment="Center" Margin="5,0,0,0"/>
                                         </StackPanel>
@@ -439,7 +427,8 @@
                                     <StackPanel Margin="10">
                                         <StackPanel Orientation="Horizontal" Margin="0,5">
                                             <TextBlock Text="字体:" Width="80" VerticalAlignment="Center"/>
-                                            <ComboBox x:Name="TranslationFontComboBox" Width="150" SelectedItem="{Binding TranslationFontFamily}">
+                                            <ComboBox x:Name="TranslationFontComboBox" Width="150" SelectedItem="{Binding TranslationFontFamily}"
+>
                                                 <ComboBoxItem Content="Microsoft YaHei UI"/>
                                                 <ComboBoxItem Content="Microsoft YaHei"/>
                                                 <ComboBoxItem Content="SimHei"/>
@@ -451,7 +440,8 @@
                                         <StackPanel Orientation="Horizontal" Margin="0,5">
                                             <TextBlock Text="大小:" Width="80" VerticalAlignment="Center"/>
                                             <Slider x:Name="TranslationSizeSlider" Width="150" Minimum="10" Maximum="32" 
-                                                    Value="{Binding TranslationFontSize}" TickFrequency="2" IsSnapToTickEnabled="True"/>
+                                                    Value="{Binding TranslationFontSize}" TickFrequency="2" IsSnapToTickEnabled="True"
+/>
                                             <TextBlock x:Name="TranslationSizeText" Text="{Binding TranslationFontSize, StringFormat={}{0:F0}}" 
                                                        Width="30" VerticalAlignment="Center" Margin="5,0,0,0"/>
                                         </StackPanel>
@@ -479,14 +469,16 @@
                                         <StackPanel Orientation="Horizontal" Margin="0,5">
                                             <TextBlock Text="圆角:" Width="80" VerticalAlignment="Center"/>
                                             <Slider x:Name="CornerRadiusSlider" Width="150" Minimum="0" Maximum="30" 
-                                                    Value="{Binding CornerRadius}" TickFrequency="2" IsSnapToTickEnabled="True"/>
+                                                    Value="{Binding CornerRadius}" TickFrequency="2" IsSnapToTickEnabled="True"
+/>
                                             <TextBlock x:Name="CornerRadiusText" Text="{Binding CornerRadius, StringFormat={}{0:F0}}" 
                                                        Width="30" VerticalAlignment="Center" Margin="5,0,0,0"/>
                                         </StackPanel>
                                         <StackPanel Orientation="Horizontal" Margin="0,5">
                                             <TextBlock Text="内边距:" Width="80" VerticalAlignment="Center"/>
                                             <Slider x:Name="PaddingSlider" Width="150" Minimum="5" Maximum="30" 
-                                                    Value="{Binding Padding}" TickFrequency="1" IsSnapToTickEnabled="True"/>
+                                                    Value="{Binding Padding}" TickFrequency="1" IsSnapToTickEnabled="True"
+/>
                                             <TextBlock x:Name="PaddingText" Text="{Binding Padding, StringFormat={}{0:F0}}" 
                                                        Width="30" VerticalAlignment="Center" Margin="5,0,0,0"/>
                                         </StackPanel>
@@ -495,13 +487,17 @@
                                 
                                 <!-- 重置按钮 -->
                                 <Button x:Name="ResetStyleButton" Content="重置为默认样式" Width="150" Height="35" 
-                                        HorizontalAlignment="Left" Margin="0,10,0,0" Style="{StaticResource ControlButtonStyle}"
+                                        HorizontalAlignment="Left" Margin="0,10,0,0" Style="{StaticResource MaterialDesignOutlinedButton}"
                                         Click="ResetStyleButton_Click"/>
                             </StackPanel>
                         </Border>
                         
                         <!-- 网易云API设置 -->
-                        <Border Style="{StaticResource CardStyle}">
+                        <Border Background="#2D2D30" 
+                                CornerRadius="8" 
+                                Padding="20" 
+                                Margin="15,10"
+                                Effect="{DynamicResource MaterialDesignElevationShadow2}">
                             <StackPanel>
                                 <TextBlock Text="网易云API设置" FontSize="18" FontWeight="Bold" Margin="0,0,0,15"/>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
@@ -515,7 +511,7 @@
                                         Content="测试API连接"
                                         Width="120"
                                         HorizontalAlignment="Left"
-                                        Style="{StaticResource ControlButtonStyle}"
+                                        Style="{StaticResource MaterialDesignRaisedButton}"
                                         Click="TestApiButton_Click"/>
                             </StackPanel>
                         </Border>
