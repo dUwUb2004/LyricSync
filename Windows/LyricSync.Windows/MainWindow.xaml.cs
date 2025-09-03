@@ -26,6 +26,7 @@ namespace LyricSync.Windows
         private MainViewModel viewModel;
         private Logger logger;
         private UIService uiService;
+        private NeteaseMusicService neteaseService;
         private DispatcherTimer progressTimer;
         
         // 桌面歌词样式设置属性
@@ -131,9 +132,13 @@ namespace LyricSync.Windows
             // 初始化日志服务
             logger = new Logger(LogTextBox, LogStatusText, Dispatcher);
             
+            // 初始化网易云音乐服务
+            neteaseService = new NeteaseMusicService(logger);
+            
             // 初始化UI服务
             uiService = new UIService(
                 logger,
+                neteaseService,
                 SongTitle, ArtistName, AlbumName,
                 ProgressBar, CurrentTime, TotalTime,
                 StatusText, StatusDescription, BottomStatusText,

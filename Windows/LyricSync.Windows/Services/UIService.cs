@@ -14,6 +14,7 @@ namespace LyricSync.Windows.Services
     public class UIService
     {
         private readonly ILogger logger;
+        private readonly NeteaseMusicService neteaseService;
         
         // UI控件引用
         private readonly TextBlock songTitle;
@@ -37,6 +38,7 @@ namespace LyricSync.Windows.Services
 
         public UIService(
             ILogger logger,
+            NeteaseMusicService neteaseService,
             TextBlock songTitle,
             TextBlock artistName,
             TextBlock albumName,
@@ -57,6 +59,7 @@ namespace LyricSync.Windows.Services
             MahApps.Metro.IconPacks.PackIconMaterial defaultMusicIcon)
         {
             this.logger = logger;
+            this.neteaseService = neteaseService;
             this.songTitle = songTitle;
             this.artistName = artistName;
             this.albumName = albumName;
@@ -359,8 +362,26 @@ namespace LyricSync.Windows.Services
                 string coverUrl = null;
                 string coverSource = "";
                 
-                // 1. 优先使用专辑封面
-                if (matchedSong.Album != null)
+                // 1. 优先使用新的封面获取API
+                if (matchedSong.Id > 0)
+                {
+                    try
+                    {
+                        var newCoverUrl = await neteaseService.GetCoverUrlAsync(matchedSong.Id.ToString(), "song");
+                        if (!string.IsNullOrEmpty(newCoverUrl))
+                        {
+                            coverUrl = newCoverUrl;
+                            coverSource = "网易云API直链";
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogMessage($"⚠️ 获取网易云API封面失败: {ex.Message}");
+                    }
+                }
+                
+                // 2. 如果新API失败，使用原有的专辑封面
+                if (string.IsNullOrEmpty(coverUrl) && matchedSong.Album != null)
                 {
                     if (!string.IsNullOrEmpty(matchedSong.Album.PicUrl))
                     {
@@ -379,7 +400,7 @@ namespace LyricSync.Windows.Services
                     }
                 }
                 
-                // 2. 如果没有专辑封面，尝试使用艺术家头像
+                // 3. 如果没有专辑封面，尝试使用艺术家头像
                 if (string.IsNullOrEmpty(coverUrl) && matchedSong.Artists != null && matchedSong.Artists.Count > 0)
                 {
                     var firstArtist = matchedSong.Artists[0];

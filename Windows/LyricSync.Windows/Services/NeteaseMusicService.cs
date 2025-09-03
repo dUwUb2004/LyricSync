@@ -3,9 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using System.Text;
+using System.Security.Cryptography;
 using LyricSync.Windows.Models;
 using LyricSync.Windows.Utils;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace LyricSync.Windows.Services
 {
@@ -490,6 +493,189 @@ namespace LyricSync.Windows.Services
                 return null;
             }
         }
+
+        /// <summary>
+        /// 获取网易云歌曲/专辑封面直链（通过网页解析）
+        /// </summary>
+        /// <param name="id">数字ID</param>
+        /// <param name="type">"song" 或 "album"</param>
+        /// <returns>封面URL；失败返回 null</returns>
+        public async Task<string> GetCoverUrlAsync(string id, string type = "song")
+        {
+            if (string.IsNullOrWhiteSpace(id) || (type != "song" && type != "album"))
+                return null;
+
+            try
+            {
+                string url;
+                if (type == "song")
+                {
+                    url = $"https://music.163.com/song?id={id}";
+                }
+                else // album
+                {
+                    url = $"https://music.163.com/album?id={id}";
+                }
+
+                // 设置请求头，模拟浏览器访问
+                httpClient.DefaultRequestHeaders.Clear();
+                httpClient.DefaultRequestHeaders.Add("User-Agent", 
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+                httpClient.DefaultRequestHeaders.Add("Accept", 
+                    "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+                httpClient.DefaultRequestHeaders.Add("Accept-Language", "zh-CN,zh;q=0.9");
+                httpClient.DefaultRequestHeaders.Add("Connection", "keep-alive");
+
+                // 使用GetByteArrayAsync避免字符集问题，然后智能解码
+                var responseBytes = await httpClient.GetByteArrayAsync(url);
+                string response = DetectAndDecodeString(responseBytes);
+                
+                if (type == "song")
+                {
+                    return ExtractSongCoverFromHtml(response);
+                }
+                else
+                {
+                    return ExtractAlbumCoverFromHtml(response);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogMessage($"❌ 获取封面失败: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 智能检测并解码字符串，处理不同的字符编码
+        /// </summary>
+        private string DetectAndDecodeString(byte[] bytes)
+        {
+            try
+            {
+                // 首先尝试从HTML中检测charset
+                string htmlStart = System.Text.Encoding.UTF8.GetString(bytes, 0, Math.Min(1024, bytes.Length));
+                var charsetMatch = System.Text.RegularExpressions.Regex.Match(htmlStart, 
+                    @"charset=[""']?([^""'>\s]+)[""']?", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                
+                if (charsetMatch.Success)
+                {
+                    string charset = charsetMatch.Groups[1].Value.ToLower();
+                    try
+                    {
+                        var encoding = System.Text.Encoding.GetEncoding(charset);
+                        return encoding.GetString(bytes);
+                    }
+                    catch
+                    {
+                        // 如果指定的编码不支持，继续尝试其他方法
+                    }
+                }
+                
+                // 尝试常见的中文编码
+                var encodings = new[]
+                {
+                    System.Text.Encoding.UTF8,
+                    System.Text.Encoding.GetEncoding("GB2312"),
+                    System.Text.Encoding.GetEncoding("GBK"),
+                    System.Text.Encoding.GetEncoding("GB18030"),
+                    System.Text.Encoding.ASCII
+                };
+                
+                foreach (var encoding in encodings)
+                {
+                    try
+                    {
+                        string result = encoding.GetString(bytes);
+                        // 简单检查是否包含中文字符，验证解码是否正确
+                        if (result.Contains("网易云音乐") || result.Contains("music.163.com"))
+                        {
+                            return result;
+                        }
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+                }
+                
+                // 如果所有方法都失败，使用UTF-8作为默认
+                return System.Text.Encoding.UTF8.GetString(bytes);
+            }
+            catch
+            {
+                // 最后的保险，使用UTF-8
+                return System.Text.Encoding.UTF8.GetString(bytes);
+            }
+        }
+
+        /// <summary>
+        /// 从歌曲页面HTML中提取封面URL
+        /// </summary>
+        private string ExtractSongCoverFromHtml(string html)
+        {
+            try
+            {
+                // 查找 og:image meta 标签
+                var ogImageMatch = System.Text.RegularExpressions.Regex.Match(html, 
+                    @"<meta\s+property=""og:image""\s+content=""([^""]+)""");
+                
+                if (ogImageMatch.Success)
+                {
+                    var imageUrl = ogImageMatch.Groups[1].Value;
+                    // 移除URL参数，只保留基础URL
+                    return imageUrl.Split('?')[0];
+                }
+
+                logger.LogMessage("⚠️ 未在歌曲页面找到封面图片");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                logger.LogMessage($"❌ 解析歌曲页面HTML失败: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 从专辑页面HTML中提取封面URL
+        /// </summary>
+        private string ExtractAlbumCoverFromHtml(string html)
+        {
+            try
+            {
+                // 查找专辑封面图片
+                var coverMatch = System.Text.RegularExpressions.Regex.Match(html, 
+                    @"<div\s+class=""cover\s+u-cover\s+u-cover-alb"">.*?<img[^>]+data-src=""([^""]+)""");
+                
+                if (coverMatch.Success)
+                {
+                    var imageUrl = coverMatch.Groups[1].Value;
+                    // 移除URL参数，只保留基础URL
+                    return imageUrl.Split('?')[0];
+                }
+
+                // 如果上面的方法失败，尝试查找 og:image
+                var ogImageMatch = System.Text.RegularExpressions.Regex.Match(html, 
+                    @"<meta\s+property=""og:image""\s+content=""([^""]+)""");
+                
+                if (ogImageMatch.Success)
+                {
+                    var imageUrl = ogImageMatch.Groups[1].Value;
+                    return imageUrl.Split('?')[0];
+                }
+
+                logger.LogMessage("⚠️ 未在专辑页面找到封面图片");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                logger.LogMessage($"❌ 解析专辑页面HTML失败: {ex.Message}");
+                return null;
+            }
+        }
+
+
 
         public void Dispose()
         {
