@@ -35,6 +35,8 @@ namespace LyricSync.Windows.Services
         private readonly Expander matchedSongExpander;
         private readonly Image albumCoverImage;
         private readonly MahApps.Metro.IconPacks.PackIconMaterial defaultMusicIcon;
+        private readonly Image currentPlayingCoverImage;
+        private readonly MahApps.Metro.IconPacks.PackIconMaterial currentPlayingDefaultIcon;
 
         public UIService(
             ILogger logger,
@@ -56,7 +58,9 @@ namespace LyricSync.Windows.Services
             TextBox jsonDisplayTextBox,
             Expander matchedSongExpander,
             Image albumCoverImage,
-            MahApps.Metro.IconPacks.PackIconMaterial defaultMusicIcon)
+            MahApps.Metro.IconPacks.PackIconMaterial defaultMusicIcon,
+            Image currentPlayingCoverImage,
+            MahApps.Metro.IconPacks.PackIconMaterial currentPlayingDefaultIcon)
         {
             this.logger = logger;
             this.neteaseService = neteaseService;
@@ -78,6 +82,8 @@ namespace LyricSync.Windows.Services
             this.matchedSongExpander = matchedSongExpander;
             this.albumCoverImage = albumCoverImage;
             this.defaultMusicIcon = defaultMusicIcon;
+            this.currentPlayingCoverImage = currentPlayingCoverImage;
+            this.currentPlayingDefaultIcon = currentPlayingDefaultIcon;
         }
 
         /// <summary>
@@ -459,11 +465,13 @@ namespace LyricSync.Windows.Services
                             bitmap.StreamSource = new System.IO.MemoryStream(imageBytes);
                             bitmap.EndInit();
                             
-                            // 设置封面图片
+                            // 设置封面图片到两个位置
                             albumCoverImage.Source = bitmap;
+                            currentPlayingCoverImage.Source = bitmap;
                             
                             // 隐藏默认音符图标
                             defaultMusicIcon.Visibility = Visibility.Collapsed;
+                            currentPlayingDefaultIcon.Visibility = Visibility.Collapsed;
                             
                             logger.LogMessage($"✅ 封面加载成功");
                         }
@@ -493,9 +501,11 @@ namespace LyricSync.Windows.Services
                 {
                     // 清除封面图片
                     albumCoverImage.Source = null;
+                    currentPlayingCoverImage.Source = null;
                     
                     // 显示默认音符图标
                     defaultMusicIcon.Visibility = Visibility.Visible;
+                    currentPlayingDefaultIcon.Visibility = Visibility.Visible;
                     
                     logger.LogMessage("🎵 已设置默认音符图标");
                 }

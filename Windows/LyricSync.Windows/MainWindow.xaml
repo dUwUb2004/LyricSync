@@ -73,8 +73,14 @@
                         
                         <!-- 专辑封面占位符 -->
                         <Border Width="120" Height="120" Background="#F0F0F0" CornerRadius="8" 
-                                HorizontalAlignment="Center" Margin="0,0,0,20">
-                            <iconPacks:PackIconMaterial Kind="Music" Width="48" Height="48" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#999"/>
+                                HorizontalAlignment="Center" Margin="0,0,0,20" BorderBrush="#E0E0E0" BorderThickness="1">
+                            <Grid>
+                                <Image x:Name="CurrentPlayingCoverImage" Stretch="UniformToFill" 
+                                       RenderOptions.BitmapScalingMode="HighQuality"/>
+                                <!-- 默认音符图标 -->
+                                <iconPacks:PackIconMaterial x:Name="CurrentPlayingDefaultIcon" Kind="Music" Width="48" Height="48" 
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#999"/>
+                            </Grid>
                         </Border>
                         
                         <!-- 音乐信息 -->

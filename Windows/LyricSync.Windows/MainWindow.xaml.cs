@@ -144,7 +144,8 @@ namespace LyricSync.Windows
                 StatusText, StatusDescription, BottomStatusText,
                 MatchedSongTitle, MatchedSongArtist, MatchedSongAlbum,
                 MatchedSongDuration, MatchedSongId, JsonDisplayTextBox,
-                MatchedSongExpander, AlbumCoverImage, DefaultMusicIcon
+                MatchedSongExpander, AlbumCoverImage, DefaultMusicIcon,
+                CurrentPlayingCoverImage, CurrentPlayingDefaultIcon
             );
             
             // 初始化视图模型
