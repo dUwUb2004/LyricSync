@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using System.Text;
 using System.Security.Cryptography;
+using System.IO;
 using LyricSync.Windows.Models;
 using LyricSync.Windows.Utils;
 using Newtonsoft.Json;
@@ -17,46 +18,84 @@ namespace LyricSync.Windows.Services
         private readonly HttpClient httpClient;
         private readonly ILogger logger;
         
-        // 网易云API服务器地址配置
-        // 如果你的API服务器运行在其他地址，请修改这里
-        // 例如：http://localhost:8080 或 http://192.168.1.100:3000
-        private const string NETEASE_API_BASE = "http://localhost:3000";
+        // 网易云音乐官方API地址
+        private const string NETEASE_API_BASE = "https://music.163.com";
+        private const string NETEASE_API_WEAPI = "https://music.163.com/weapi";
 
         public NeteaseMusicService(ILogger logger)
         {
             this.logger = logger;
             httpClient = new HttpClient();
             httpClient.Timeout = TimeSpan.FromSeconds(10);
+            
+            // 设置默认请求头
+            httpClient.DefaultRequestHeaders.Add("User-Agent", 
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+            httpClient.DefaultRequestHeaders.Add("Referer", "https://music.163.com/");
+            httpClient.DefaultRequestHeaders.Add("Origin", "https://music.163.com");
         }
 
         public async Task<bool> TestConnectionAsync()
         {
             try
             {
-                logger.LogMessage("🔍 正在测试网易云API连接...");
+                logger.LogMessage("🔍 正在测试网易云音乐API连接...");
                 
-                // 测试搜索路径而不是根路径，因为根路径可能没有处理程序
-                var response = await httpClient.GetAsync($"{NETEASE_API_BASE}/search?keywords=test&type=1&limit=1&offset=0");
+                // 使用简单的搜索接口，不需要加密
+                string searchUrl = "https://music.163.com/api/search/get/web?s=周杰伦&type=1&limit=1&offset=0";
+                logger.LogMessage($"📡 测试搜索URL: {searchUrl}");
+                
+                var response = await httpClient.GetAsync(searchUrl);
                 
                 if (response.IsSuccessStatusCode)
                 {
-                    logger.LogMessage("✅ 网易云API连接测试成功");
-                    return true;
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    logger.LogMessage($"📡 搜索API响应: {responseContent.Substring(0, Math.Min(200, responseContent.Length))}...");
+                    
+                    if (!string.IsNullOrEmpty(responseContent))
+                    {
+                        try
+                        {
+                            var jsonResponse = JObject.Parse(responseContent);
+                            var code = jsonResponse["code"]?.Value<int>();
+                            
+                            if (code == 200)
+                            {
+                                logger.LogMessage("✅ 网易云音乐API连接测试成功");
+                                return true;
+                            }
+                            else
+                            {
+                                logger.LogMessage($"⚠️ API返回错误代码: {code}");
+                                logger.LogMessage($"💡 响应内容: {responseContent}");
+                                return false;
+                            }
+                        }
+                        catch (Exception parseEx)
+                        {
+                            logger.LogMessage($"❌ 解析响应失败: {parseEx.Message}");
+                            logger.LogMessage($"💡 原始响应: {responseContent}");
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        logger.LogMessage("❌ 响应内容为空");
+                        return false;
+                    }
                 }
                 else
                 {
                     var errorContent = await response.Content.ReadAsStringAsync();
-                    logger.LogMessage($"⚠️ 网易云API连接测试失败: {response.StatusCode}");
+                    logger.LogMessage($"⚠️ 搜索API请求失败: {response.StatusCode}");
                     logger.LogMessage($"💡 错误响应: {errorContent}");
-                    logger.LogMessage("💡 请确保API服务器正在运行");
                     return false;
                 }
             }
             catch (Exception ex)
             {
-                logger.LogMessage($"❌ 网易云API连接测试失败: {ex.Message}");
-                logger.LogMessage($"💡 请检查API服务器是否启动，地址是否正确");
-                logger.LogMessage($"💡 当前配置的API地址: {NETEASE_API_BASE}");
+                logger.LogMessage($"❌ 网易云音乐API连接测试失败: {ex.Message}");
+                logger.LogMessage($"💡 请检查网络连接");
                 return false;
             }
         }
@@ -77,9 +116,9 @@ namespace LyricSync.Windows.Services
                 
                 logger.LogMessage($"🔍 正在搜索网易云音乐: '{searchKeywords}'");
                 
-                // 使用已验证有效的 'keywords' 参数进行搜索
+                // 使用简单的搜索接口，不需要加密
                 string encodedKeywords = Uri.EscapeDataString(searchKeywords);
-                var searchUrl = $"{NETEASE_API_BASE}/search?keywords={encodedKeywords}&type=1&limit=20&offset=0";
+                string searchUrl = $"https://music.163.com/api/search/get/web?s={encodedKeywords}&type=1&limit=20&offset=0";
                 
                 logger.LogMessage($"📡 发送搜索请求: {searchUrl}");
                 
@@ -95,7 +134,10 @@ namespace LyricSync.Windows.Services
                     var errorContent = await response.Content.ReadAsStringAsync();
                     logger.LogMessage($"❌ 搜索请求失败，状态码: {response.StatusCode}");
                     logger.LogMessage($"💡 错误响应: {errorContent}");
-                    return null;
+                    
+                    // 如果API搜索失败，尝试使用网页解析
+                    logger.LogMessage("🔄 尝试使用网页解析方式搜索...");
+                    return await SearchMusicByWebParsing(searchKeywords, musicInfo);
                 }
             }
             catch (Exception ex)
@@ -416,83 +458,7 @@ namespace LyricSync.Windows.Services
             }
         }
 
-        /// <summary>
-        /// 根据歌曲ID获取歌词
-        /// </summary>
-        /// <param name="songId">歌曲ID</param>
-        /// <returns>歌词响应对象，如果获取失败返回null</returns>
-        public async Task<NeteaseLyricResponse> GetLyricAsync(long songId)
-        {
-            try
-            {
-                logger.LogMessage($"🎵 正在获取歌曲ID {songId} 的歌词...");
-                
-                string lyricUrl = $"{NETEASE_API_BASE}/lyric?id={songId}";
-                logger.LogMessage($"📡 发送歌词请求: {lyricUrl}");
-                
-                var response = await httpClient.GetAsync(lyricUrl);
-                
-                if (response.IsSuccessStatusCode)
-                {
-                    logger.LogMessage("✅ 歌词请求成功");
-                    
-                    var responseContent = await response.Content.ReadAsStringAsync();
-                    logger.LogMessage($"📡 歌词API响应: {responseContent.Substring(0, Math.Min(200, responseContent.Length))}...");
-                    
-                    var lyricResponse = JsonConvert.DeserializeObject<NeteaseLyricResponse>(responseContent);
-                    
-                    if (lyricResponse != null)
-                    {
-                        if (lyricResponse.Code == 200)
-                        {
-                            // 检查是否有歌词内容
-                            bool hasLyric = !string.IsNullOrEmpty(lyricResponse.Lrc?.Lyric);
-                            bool hasTranslation = !string.IsNullOrEmpty(lyricResponse.Tlyric?.Lyric);
-                            bool hasRomalrc = !string.IsNullOrEmpty(lyricResponse.Romalrc?.Lyric);
-                            
-                            logger.LogMessage($"🎵 歌词获取成功:");
-                            logger.LogMessage($"   - 原歌词: {(hasLyric ? "✅ 有" : "❌ 无")}");
-                            logger.LogMessage($"   - 翻译歌词: {(hasTranslation ? "✅ 有" : "❌ 无")}");
-                            logger.LogMessage($"   - 罗马音歌词: {(hasRomalrc ? "✅ 有" : "❌ 无")}");
-                            
-                            if (hasLyric)
-                            {
-                                // 统计歌词行数
-                                var lyricLines = lyricResponse.Lrc.Lyric.Split('\n')
-                                    .Where(line => !string.IsNullOrWhiteSpace(line) && line.Contains(']'))
-                                    .Count();
-                                logger.LogMessage($"   - 歌词行数: {lyricLines} 行");
-                            }
-                            
-                            return lyricResponse;
-                        }
-                        else
-                        {
-                            logger.LogMessage($"❌ 歌词API返回错误代码: {lyricResponse.Code}");
-                            return null;
-                        }
-                    }
-                    else
-                    {
-                        logger.LogMessage("❌ 歌词响应解析失败");
-                        return null;
-                    }
-                }
-                else
-                {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-                    logger.LogMessage($"❌ 歌词请求失败，状态码: {response.StatusCode}");
-                    logger.LogMessage($"💡 错误响应: {errorContent}");
-                    return null;
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.LogMessage($"❌ 获取歌词失败: {ex.Message}");
-                logger.LogMessage($"💡 请检查网络连接和API服务器状态");
-                return null;
-            }
-        }
+
 
         /// <summary>
         /// 获取网易云歌曲/专辑封面直链（通过网页解析）
@@ -676,6 +642,414 @@ namespace LyricSync.Windows.Services
         }
 
 
+
+        #region 网易云音乐API加密和签名方法
+
+        /// <summary>
+        /// 网易云音乐API加密方法
+        /// </summary>
+        private string EncryptRequest(string text, string key)
+        {
+            try
+            {
+                // 使用AES加密
+                using (var aes = Aes.Create())
+                {
+                    aes.Mode = CipherMode.CBC;
+                    aes.Padding = PaddingMode.PKCS7;
+                    aes.Key = Encoding.UTF8.GetBytes(key);
+                    aes.IV = Encoding.UTF8.GetBytes("0102030405060708"); // 固定IV
+
+                    using (var encryptor = aes.CreateEncryptor())
+                    using (var msEncrypt = new MemoryStream())
+                    using (var csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
+                    using (var swEncrypt = new StreamWriter(csEncrypt))
+                    {
+                        swEncrypt.Write(text);
+                        swEncrypt.Close();
+                        return Convert.ToBase64String(msEncrypt.ToArray());
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogMessage($"❌ 加密请求失败: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 生成网易云音乐API签名
+        /// </summary>
+        private string GenerateSignature(string text, string key)
+        {
+            try
+            {
+                using (var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(key)))
+                {
+                    byte[] hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(text));
+                    return Convert.ToBase64String(hashBytes);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogMessage($"❌ 生成签名失败: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 创建网易云音乐API请求参数
+        /// </summary>
+        private FormUrlEncodedContent CreateWeApiRequest(object data)
+        {
+            try
+            {
+                // 将数据转换为JSON
+                string jsonData = JsonConvert.SerializeObject(data);
+                logger.LogMessage($"🔐 原始请求数据: {jsonData}");
+                
+                // 使用网易云音乐的标准密钥
+                string secretKey = "0CoJUm6Qyw8W8jud";
+                string encSecKey = "257348aecb5e556c066de214e531faadd1c55d814f9be95fd06d6bff9f4c7a41f831f6394d5a3fd2e3881736d94a02ca919d952872e7d0a50ebfa1769a7a62d512f5f1ca21aec60bc3819a9c3ffca5eca9a0dba6d6f724209b403c3b38fe99d635f74566507b1519ad1681e39f872e8342540d2a3b7d1d1d0bfcafed9d4d06671";
+                
+                // 第一次加密
+                string firstEncrypt = EncryptRequest(jsonData, secretKey);
+                if (string.IsNullOrEmpty(firstEncrypt)) 
+                {
+                    logger.LogMessage("❌ 第一次加密失败");
+                    return null;
+                }
+                logger.LogMessage($"🔐 第一次加密结果: {firstEncrypt.Substring(0, Math.Min(50, firstEncrypt.Length))}...");
+                
+                // 第二次加密
+                string secondEncrypt = EncryptRequest(firstEncrypt, secretKey);
+                if (string.IsNullOrEmpty(secondEncrypt)) 
+                {
+                    logger.LogMessage("❌ 第二次加密失败");
+                    return null;
+                }
+                logger.LogMessage($"🔐 第二次加密结果: {secondEncrypt.Substring(0, Math.Min(50, secondEncrypt.Length))}...");
+                
+                // 创建请求参数
+                var parameters = new List<KeyValuePair<string, string>>
+                {
+                    new KeyValuePair<string, string>("params", secondEncrypt),
+                    new KeyValuePair<string, string>("encSecKey", encSecKey)
+                };
+                
+                logger.LogMessage("✅ API请求参数创建成功");
+                return new FormUrlEncodedContent(parameters);
+            }
+            catch (Exception ex)
+            {
+                logger.LogMessage($"❌ 创建API请求参数失败: {ex.Message}");
+                return null;
+            }
+        }
+
+        #endregion
+
+        #region 网易云音乐API方法实现
+
+        /// <summary>
+        /// 获取歌曲详情
+        /// </summary>
+        public async Task<NeteaseSong> GetSongDetailAsync(long songId)
+        {
+            try
+            {
+                logger.LogMessage($"🎵 获取歌曲详情: {songId}");
+                
+                var requestData = new
+                {
+                    ids = $"[{songId}]",
+                    c = "[]"
+                };
+                
+                var content = CreateWeApiRequest(requestData);
+                if (content == null)
+                {
+                    logger.LogMessage("❌ 创建歌曲详情请求失败");
+                    return null;
+                }
+                
+                var response = await httpClient.PostAsync($"{NETEASE_API_WEAPI}/v3/song/detail", content);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    var jsonResponse = JObject.Parse(responseContent);
+                    
+                    if (jsonResponse["code"]?.Value<int>() == 200)
+                    {
+                        var songs = jsonResponse["songs"]?.ToObject<List<NeteaseSong>>();
+                        if (songs != null && songs.Count > 0)
+                        {
+                            logger.LogMessage($"✅ 获取歌曲详情成功: {songs[0].Name}");
+                            return songs[0];
+                        }
+                    }
+                }
+                
+                logger.LogMessage($"❌ 获取歌曲详情失败: {songId}");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                logger.LogMessage($"❌ 获取歌曲详情异常: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 获取歌词（返回字符串）
+        /// </summary>
+        public async Task<string> GetLyricAsync(long songId)
+        {
+            try
+            {
+                logger.LogMessage($"🎵 获取歌词: {songId}");
+                
+                // 使用简单的GET请求获取歌词
+                string lyricUrl = $"https://music.163.com/api/song/lyric?id={songId}&lv=-1&kv=-1&tv=-1";
+                logger.LogMessage($"📡 歌词请求URL: {lyricUrl}");
+                
+                var response = await httpClient.GetAsync(lyricUrl);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    logger.LogMessage($"📡 歌词API响应: {responseContent.Substring(0, Math.Min(200, responseContent.Length))}...");
+                    
+                    var jsonResponse = JObject.Parse(responseContent);
+                    
+                    if (jsonResponse["code"]?.Value<int>() == 200)
+                    {
+                        var lrc = jsonResponse["lrc"]?["lyric"]?.Value<string>();
+                        if (!string.IsNullOrEmpty(lrc))
+                        {
+                            logger.LogMessage($"✅ 获取歌词成功");
+                            return lrc;
+                        }
+                    }
+                }
+                
+                logger.LogMessage($"❌ 获取歌词失败: {songId}");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                logger.LogMessage($"❌ 获取歌词异常: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 获取歌词（返回完整响应对象）
+        /// </summary>
+        public async Task<NeteaseLyricResponse> GetLyricResponseAsync(long songId)
+        {
+            try
+            {
+                logger.LogMessage($"🎵 获取歌词响应: {songId}");
+                
+                // 使用简单的GET请求获取歌词
+                string lyricUrl = $"https://music.163.com/api/song/lyric?id={songId}&lv=-1&kv=-1&tv=-1";
+                logger.LogMessage($"📡 歌词请求URL: {lyricUrl}");
+                
+                var response = await httpClient.GetAsync(lyricUrl);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    logger.LogMessage($"📡 歌词API响应: {responseContent.Substring(0, Math.Min(200, responseContent.Length))}...");
+                    
+                    var jsonResponse = JObject.Parse(responseContent);
+                    
+                    if (jsonResponse["code"]?.Value<int>() == 200)
+                    {
+                        var lyricResponse = jsonResponse.ToObject<NeteaseLyricResponse>();
+                        if (lyricResponse != null)
+                        {
+                            logger.LogMessage($"✅ 获取歌词响应成功");
+                            return lyricResponse;
+                        }
+                    }
+                }
+                
+                logger.LogMessage($"❌ 获取歌词响应失败: {songId}");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                logger.LogMessage($"❌ 获取歌词响应异常: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 获取专辑详情
+        /// </summary>
+        public async Task<NeteaseAlbum> GetAlbumDetailAsync(long albumId)
+        {
+            try
+            {
+                logger.LogMessage($"💿 获取专辑详情: {albumId}");
+                
+                var requestData = new
+                {
+                    id = albumId
+                };
+                
+                var content = CreateWeApiRequest(requestData);
+                if (content == null)
+                {
+                    logger.LogMessage("❌ 创建专辑详情请求失败");
+                    return null;
+                }
+                
+                var response = await httpClient.PostAsync($"{NETEASE_API_WEAPI}/v1/album/{albumId}", content);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    var jsonResponse = JObject.Parse(responseContent);
+                    
+                    if (jsonResponse["code"]?.Value<int>() == 200)
+                    {
+                        var album = jsonResponse["album"]?.ToObject<NeteaseAlbum>();
+                        if (album != null)
+                        {
+                            logger.LogMessage($"✅ 获取专辑详情成功: {album.Name}");
+                            return album;
+                        }
+                    }
+                }
+                
+                logger.LogMessage($"❌ 获取专辑详情失败: {albumId}");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                logger.LogMessage($"❌ 获取专辑详情异常: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 获取艺术家详情
+        /// </summary>
+        public async Task<NeteaseArtist> GetArtistDetailAsync(long artistId)
+        {
+            try
+            {
+                logger.LogMessage($"🎤 获取艺术家详情: {artistId}");
+                
+                var requestData = new
+                {
+                    id = artistId
+                };
+                
+                var content = CreateWeApiRequest(requestData);
+                if (content == null)
+                {
+                    logger.LogMessage("❌ 创建艺术家详情请求失败");
+                    return null;
+                }
+                
+                var response = await httpClient.PostAsync($"{NETEASE_API_WEAPI}/v1/artist/{artistId}", content);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    var jsonResponse = JObject.Parse(responseContent);
+                    
+                    if (jsonResponse["code"]?.Value<int>() == 200)
+                    {
+                        var artist = jsonResponse["artist"]?.ToObject<NeteaseArtist>();
+                        if (artist != null)
+                        {
+                            logger.LogMessage($"✅ 获取艺术家详情成功: {artist.Name}");
+                            return artist;
+                        }
+                    }
+                }
+                
+                logger.LogMessage($"❌ 获取艺术家详情失败: {artistId}");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                logger.LogMessage($"❌ 获取艺术家详情异常: {ex.Message}");
+                return null;
+            }
+        }
+
+        #endregion
+
+        #region 网页解析搜索方法
+
+        /// <summary>
+        /// 通过网页解析方式搜索音乐
+        /// </summary>
+        private async Task<NeteaseSong> SearchMusicByWebParsing(string searchKeywords, MusicInfo musicInfo)
+        {
+            try
+            {
+                logger.LogMessage($"🌐 使用网页解析搜索: '{searchKeywords}'");
+                
+                // 构建搜索URL
+                string encodedKeywords = Uri.EscapeDataString(searchKeywords);
+                string searchUrl = $"https://music.163.com/#/search/m/?s={encodedKeywords}&type=1";
+                
+                // 尝试使用移动端搜索接口
+                string mobileSearchUrl = $"https://music.163.com/api/search/get/web?s={encodedKeywords}&type=1&limit=20&offset=0";
+                
+                logger.LogMessage($"📡 发送网页搜索请求: {mobileSearchUrl}");
+                
+                var response = await httpClient.GetAsync(mobileSearchUrl);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    logger.LogMessage($"📡 网页搜索响应: {responseContent.Substring(0, Math.Min(200, responseContent.Length))}...");
+                    
+                    // 尝试解析响应
+                    var jsonResponse = JObject.Parse(responseContent);
+                    
+                    if (jsonResponse["code"]?.Value<int>() == 200)
+                    {
+                        var result = jsonResponse["result"];
+                        var songs = result["songs"]?.ToObject<List<NeteaseSong>>();
+                        
+                        if (songs != null && songs.Count > 0)
+                        {
+                            logger.LogMessage($"🎵 网页搜索找到 {songs.Count} 首歌曲");
+                            
+                            // 匹配最佳结果
+                            var bestMatch = FindBestMatch(musicInfo, songs);
+                            
+                            if (bestMatch != null)
+                            {
+                                logger.LogMessage($"✅ 网页搜索找到匹配歌曲: {bestMatch.Name}");
+                                return bestMatch;
+                            }
+                        }
+                    }
+                }
+                
+                logger.LogMessage("❌ 网页解析搜索失败");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                logger.LogMessage($"❌ 网页解析搜索异常: {ex.Message}");
+                return null;
+            }
+        }
+
+        #endregion
 
         public void Dispose()
         {

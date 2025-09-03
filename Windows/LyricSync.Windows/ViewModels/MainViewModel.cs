@@ -287,29 +287,8 @@ namespace LyricSync.Windows.ViewModels
                         lastSearchedKey = BuildTrackKey(musicInfo);
                         logger.LogMessage($"🔄 轨道信息变化，开始搜索: '{lastSearchedKey}'");
                         
-                        // 检查网易云API连接
-                        _ = Task.Run(async () => 
-                        {
-                            try
-                            {
-                                // 先测试API连接
-                                bool apiConnected = await neteaseService.TestConnectionAsync();
-                                if (apiConnected)
-                                {
-                                    logger.LogMessage("✅ 网易云API连接正常，开始搜索...");
-                                    await SearchNeteaseMusic(musicInfo);
-                                }
-                                else
-                                {
-                                    logger.LogMessage("❌ 网易云API连接失败，无法进行搜索");
-                                    logger.LogMessage("💡 请确保网易云API服务器正在运行 (http://localhost:3000)");
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                logger.LogMessage($"❌ 搜索过程中发生错误: {ex.Message}");
-                            }
-                        });
+                        // 异步搜索，不阻塞UI
+                        _ = SearchNeteaseMusicAsync(musicInfo);
                     }
                     else
                     {
@@ -334,6 +313,42 @@ namespace LyricSync.Windows.ViewModels
             }
         }
 
+        /// <summary>
+        /// 异步搜索网易云音乐，不阻塞UI
+        /// </summary>
+        private async Task SearchNeteaseMusicAsync(MusicInfo musicInfo)
+        {
+            try
+            {
+                // 在后台线程执行，避免阻塞UI
+                await Task.Run(async () =>
+                {
+                    try
+                    {
+                        // 先测试API连接
+                        bool apiConnected = await neteaseService.TestConnectionAsync();
+                        if (apiConnected)
+                        {
+                            logger.LogMessage("✅ 网易云API连接正常，开始搜索...");
+                            await SearchNeteaseMusic(musicInfo);
+                        }
+                        else
+                        {
+                            logger.LogMessage("❌ 网易云API连接失败，无法进行搜索");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogMessage($"❌ 搜索过程中发生错误: {ex.Message}");
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                logger.LogMessage($"❌ 异步搜索启动失败: {ex.Message}");
+            }
+        }
+
         private async Task SearchNeteaseMusic(MusicInfo musicInfo)
         {
             try
@@ -354,16 +369,16 @@ namespace LyricSync.Windows.ViewModels
                     
                     logger.LogMessage($"✅ 匹配歌曲信息已保存: {matchedSong.Name} (ID: {matchedSong.Id})");
 
-                    // 如果歌词窗口已经打开，则在切歌后刷新为当前歌曲的歌词
+                    // 如果歌词窗口已经打开，则在切歌后异步刷新为当前歌曲的歌词
                     if (lyricWindow != null)
                     {
-                        logger.LogMessage("🔄 检测到切歌，正在刷新歌词窗口为当前歌曲...");
-                        await RefreshLyricsForCurrentSongAsync();
+                        logger.LogMessage("🔄 检测到切歌，正在异步刷新歌词窗口为当前歌曲...");
+                        _ = RefreshLyricsForCurrentSongAsync();
                     }
                     if (desktopLyricWindow != null)
                     {
-                        logger.LogMessage("🔄 检测到切歌，正在刷新桌面歌词窗口...");
-                        await RefreshDesktopLyricsForCurrentSongAsync();
+                        logger.LogMessage("🔄 检测到切歌，正在异步刷新桌面歌词窗口...");
+                        _ = RefreshDesktopLyricsForCurrentSongAsync();
                     }
                 }
                 else
@@ -543,7 +558,7 @@ namespace LyricSync.Windows.ViewModels
                 }
 
                 // 获取歌词（JSON）
-                var lyricResponse = await neteaseService.GetLyricAsync(currentMusic.MatchedSong.Id);
+                var lyricResponse = await neteaseService.GetLyricResponseAsync(currentMusic.MatchedSong.Id);
                 if (lyricResponse == null || string.IsNullOrEmpty(lyricResponse.Lrc?.Lyric))
                 {
                     logger.LogMessage("❌ 未获取到可用歌词");
@@ -611,7 +626,7 @@ namespace LyricSync.Windows.ViewModels
                     return true;
                 }
 
-                var lyricResponse = await neteaseService.GetLyricAsync(currentMusic.MatchedSong.Id);
+                var lyricResponse = await neteaseService.GetLyricResponseAsync(currentMusic.MatchedSong.Id);
                 if (lyricResponse == null || string.IsNullOrEmpty(lyricResponse.Lrc?.Lyric))
                 {
                     logger.LogMessage("❌ 未获取到可用歌词");
@@ -655,7 +670,7 @@ namespace LyricSync.Windows.ViewModels
                     return;
                 }
 
-                var lyricResponse = await neteaseService.GetLyricAsync(currentMusic.MatchedSong.Id);
+                var lyricResponse = await neteaseService.GetLyricResponseAsync(currentMusic.MatchedSong.Id);
                 if (lyricResponse == null || string.IsNullOrEmpty(lyricResponse.Lrc?.Lyric))
                 {
                     logger.LogMessage("⚠️ 当前歌曲未获取到可用歌词");
@@ -669,21 +684,28 @@ namespace LyricSync.Windows.ViewModels
 
                 if (lyricWindow != null)
                 {
-                    // 确保在UI线程刷新UI
-                    await lyricWindow.Dispatcher.InvokeAsync(() =>
+                    // 使用BeginInvoke避免阻塞UI线程
+                    lyricWindow.Dispatcher.BeginInvoke(new Action(() =>
                     {
-                        lyricWindow.SetLyrics(currentLyricLines);
-
-                        // 如果有翻译，默认显示翻译
-                        bool hasTranslation = parsed.Any(line => line.HasTranslation);
-                        if (hasTranslation)
+                        try
                         {
-                            lyricWindow.SetShowTranslation(true);
-                        }
+                            lyricWindow.SetLyrics(currentLyricLines);
 
-                        // 同步高亮
-                        SyncLyricHighlight();
-                    });
+                            // 如果有翻译，默认显示翻译
+                            bool hasTranslation = parsed.Any(line => line.HasTranslation);
+                            if (hasTranslation)
+                            {
+                                lyricWindow.SetShowTranslation(true);
+                            }
+
+                            // 同步高亮
+                            SyncLyricHighlight();
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.LogMessage($"❌ UI更新失败: {ex.Message}");
+                        }
+                    }));
                 }
 
                 logger.LogMessage("✅ 歌词已刷新为当前歌曲");
@@ -706,7 +728,7 @@ namespace LyricSync.Windows.ViewModels
                     return;
                 }
 
-                var lyricResponse = await neteaseService.GetLyricAsync(currentMusic.MatchedSong.Id);
+                var lyricResponse = await neteaseService.GetLyricResponseAsync(currentMusic.MatchedSong.Id);
                 if (lyricResponse == null || string.IsNullOrEmpty(lyricResponse.Lrc?.Lyric))
                 {
                     logger.LogMessage("⚠️ 当前歌曲未获取到可用歌词");
@@ -717,11 +739,18 @@ namespace LyricSync.Windows.ViewModels
                 currentLyricLines = new System.Collections.ObjectModel.ObservableCollection<LyricLine>(parsed);
                 currentLyricIndex = -1;
 
-                await desktopLyricWindow.Dispatcher.InvokeAsync(() =>
+                desktopLyricWindow.Dispatcher.BeginInvoke(new Action(() =>
                 {
-                    desktopLyricWindow.SetLyrics(currentLyricLines);
-                    SyncLyricHighlight();
-                });
+                    try
+                    {
+                        desktopLyricWindow.SetLyrics(currentLyricLines);
+                        SyncLyricHighlight();
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogMessage($"❌ 桌面歌词UI更新失败: {ex.Message}");
+                    }
+                }));
 
                 logger.LogMessage("✅ 桌面歌词已刷新为当前歌曲");
             }
@@ -749,7 +778,7 @@ namespace LyricSync.Windows.ViewModels
                 logger.LogMessage($"🎵 开始导出歌曲 '{matchedSong.Name}' 的LRC歌词...");
 
                 // 获取歌词
-                var lyricResponse = await neteaseService.GetLyricAsync(matchedSong.Id);
+                var lyricResponse = await neteaseService.GetLyricResponseAsync(matchedSong.Id);
                 if (lyricResponse == null)
                 {
                     logger.LogMessage("❌ 获取歌词失败，无法导出");
